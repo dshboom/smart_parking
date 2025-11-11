@@ -18,10 +18,6 @@
             <span class="value">{{ durationText }}</span>
           </div>
           <div class="row">
-            <span class="label">VIP状态</span>
-            <span class="value"><el-tag :type="vipActive ? 'success' : 'info'">{{ vipActive ? 'VIP' : '普通' }}</el-tag></span>
-          </div>
-          <div class="row">
             <span class="label">预估费用</span>
             <span class="value fee">¥{{ previewFee }}</span>
           </div>
@@ -48,7 +44,6 @@
 <script>
 import { getMyCurrentParking } from '@/api/parking'
 import { calcParkingFeeAdvanced, calcParkingFee } from '@/api/pricing'
-import { getMyVip } from '@/api/user'
 import { getMyBalance, settleParkingFee } from '@/api/payments'
 
 export default {
@@ -56,7 +51,6 @@ export default {
   data() {
     return {
       current: null,
-      vipActive: false,
       previewFee: '0.00',
       loading: false,
       settleLoading: false,
@@ -80,15 +74,13 @@ export default {
     async loadAll() {
       this.loading = true
       try {
-        const [current, vip, balance] = await Promise.all([
+        const [current, balance] = await Promise.all([
           getMyCurrentParking(),
-          getMyVip().catch(() => ({ is_active: false })),
           getMyBalance().catch(() => ({ balance: 0 }))
         ])
         // 兼容后端返回结构：{ has_current_parking, current_parking }
         const curObj = current?.current_parking || current?.data?.current_parking || current || current?.data || null
         this.current = curObj
-        this.vipActive = Boolean(vip?.is_active || vip?.data?.is_active)
         const bal = Number(balance?.balance ?? balance?.data?.balance ?? 0)
         this.balanceText = `余额：¥${bal.toFixed(2)}`
         await this.refreshPreview()
@@ -105,8 +97,7 @@ export default {
       try {
         const resp = await calcParkingFeeAdvanced({
           entry_time: entryISO,
-          exit_time: nowISO,
-          is_vip: this.vipActive
+          exit_time: nowISO
         })
         const fee = Number(resp?.fee ?? resp?.data?.fee ?? 0)
         this.previewFee = fee.toFixed(2)
@@ -116,7 +107,7 @@ export default {
           const entry = new Date(this.current.entry_time)
           const now = new Date()
           const hours = Math.max((now - entry) / 3600000, 0)
-          const basic = await calcParkingFee(hours, this.vipActive)
+          const basic = await calcParkingFee(hours)
           const fee2 = Number(basic?.fee ?? basic?.data?.fee ?? 0)
           this.previewFee = fee2.toFixed(2)
         } catch (_) {

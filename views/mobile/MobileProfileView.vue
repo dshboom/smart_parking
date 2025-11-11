@@ -9,9 +9,7 @@
       <div class="user-info">
         <h3>{{ userInfo.username || '用户' }}</h3>
         <p>{{ userInfo.phone || '未绑定手机号' }}</p>
-        <el-tag type="success" size="small" v-if="userInfo.vip_level">
-          {{ getVipLevelText(userInfo.vip_level) }}
-        </el-tag>
+        <!-- 已移除VIP等级显示 -->
       </div>
     </div>
     
@@ -105,8 +103,7 @@ export default {
       userInfo: {
         username: '',
         phone: '',
-        avatar: '',
-        vip_level: 0
+        avatar: ''
       },
       userStats: {
         totalParkings: 0,
@@ -141,15 +138,7 @@ export default {
       }
     },
     
-    getVipLevelText(level) {
-      const levels = {
-        1: '普通会员',
-        2: '银卡会员',
-        3: '金卡会员',
-        4: '钻石会员'
-      }
-      return levels[level] || '普通用户'
-    },
+    // 已移除VIP等级展示逻辑
     
     goToReservations() {
       this.$router.push('/mobile/reservations')

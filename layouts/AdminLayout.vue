@@ -124,12 +124,7 @@
             </div>
             
             <div class="header-actions">
-              <el-button circle class="action-btn">
-                <el-icon><Bell /></el-icon>
-              </el-button>
-              <el-button circle class="action-btn">
-                <el-icon><Setting /></el-icon>
-              </el-button>
+              <!-- 头部操作按钮已移除 -->
             </div>
           </div>
         </el-header>

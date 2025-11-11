@@ -59,10 +59,6 @@
             <span>已占用</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color parking vip"></div>
-            <span>VIP车位</span>
-          </div>
-          <div class="legend-item">
             <div class="legend-color parking reserved"></div>
             <span>已预约</span>
           </div>
@@ -247,22 +243,8 @@ export default {
           ? { row: props.currentPosition.row, col: props.currentPosition.col }
           : (entrancePosition.value || { row: 0, col: 0 })
 
-        // Determine space type by user status/VIP membership
-        let spaceType = 'standard'
-        try {
-          // Lazy import store to avoid circular deps
-          const store = (await import('@/store')).default
-          const status = store?.state?.user?.status || ''
-          if (status === 'user') {
-            // Prefer using /users/me to avoid 404 when not VIP
-            const info = await store.dispatch('user/getInfo').catch(() => null)
-            if (info && typeof info.vip_level === 'number') {
-              spaceType = 'vip'
-            }
-          }
-        } catch (_) {
-          // Ignore store errors; default to standard
-        }
+        // 统一按普通车位查找（移除VIP逻辑）
+        const spaceType = 'standard'
 
         const result = await parkingApi.findNearestAvailableSpace(
           props.parkingLotId,
@@ -488,9 +470,7 @@ export default {
       if (cell.type === 'parking' && cell.isOccupied) {
         classes.push('occupied')
       }
-      if (cell.type === 'parking' && cell.spaceType === 'vip') {
-        classes.push('vip')
-      }
+      // 已移除VIP特殊样式
       if (cell.type === 'parking' && cell.isReserved) {
         classes.push('reserved')
       }
@@ -529,7 +509,7 @@ export default {
       if (cell.type === 'wall') return '墙壁'
       if (cell.type === 'road') return '道路'
       if (cell.type === 'parking') {
-        const typeLabel = cell.spaceType === 'vip' ? 'VIP车位' : '普通车位'
+        const typeLabel = '普通车位'
         const stateLabel = cell.isUnderMaintenance
           ? '维护停用'
           : cell.isReserved
@@ -773,9 +753,6 @@ export default {
   background: linear-gradient(135deg, #909399, #606266);
 }
 
-.grid-cell.parking.vip {
-  background: linear-gradient(135deg, #b07eff, #8c4de8);
-}
 
 .grid-cell.parking.reserved {
   background: linear-gradient(135deg, #ffb74d, #fb8c00);
@@ -870,9 +847,6 @@ export default {
   background: linear-gradient(135deg, #909399, #606266);
 }
 
-.legend-color.parking.vip {
-  background: linear-gradient(135deg, #b07eff, #8c4de8);
-}
 
 .legend-color.parking.reserved {
   background: linear-gradient(135deg, #ffb74d, #fb8c00);

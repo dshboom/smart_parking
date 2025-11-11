@@ -176,12 +176,7 @@ export default {
         description: '专门为残疾人预留的停车位数量',
         trend: 'stable'
       },
-      {
-        metric: 'VIP停车位',
-        value: '0',
-        description: 'VIP用户专用的停车位数量',
-        trend: 'stable'
-      },
+      
       {
         metric: '当前占用率',
         value: '0%',
@@ -212,9 +207,8 @@ export default {
         detailedStats[0].value = response.total_spaces.toString()
         detailedStats[1].value = (response.space_types.regular || 0).toString()
         detailedStats[2].value = (response.space_types.disabled || 0).toString()
-        detailedStats[3].value = (response.space_types.vip || 0).toString()
-        detailedStats[4].value = `${response.occupancy_rate.toFixed(1)}%`
-        detailedStats[5].value = calculateAverageStayTime(response)
+        detailedStats[3].value = `${response.occupancy_rate.toFixed(1)}%`
+        detailedStats[4].value = calculateAverageStayTime(response)
 
         // Update charts
         updateCharts()
@@ -274,7 +268,7 @@ export default {
           },
           xAxis: {
             type: 'category',
-            data: ['普通', '残疾人', 'VIP']
+            data: ['普通', '残疾人']
           },
           yAxis: {
             type: 'value'
@@ -285,8 +279,7 @@ export default {
               type: 'bar',
               data: [
                 statistics.value.space_types.regular || 0,
-                statistics.value.space_types.disabled || 0,
-                statistics.value.space_types.vip || 0
+                statistics.value.space_types.disabled || 0
               ],
               itemStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [

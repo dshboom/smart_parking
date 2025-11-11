@@ -63,19 +63,6 @@
       </div>
     </div>
 
-    <!-- VIP 预约提示与引导 -->
-    <div class="vip-tip" v-if="vipRequired">
-      <template v-if="hasActiveVip">
-        <el-alert type="success" show-icon :closable="false" title="VIP预约已开放" description="您现在可以预约车位，并享受VIP费用优惠。" />
-      </template>
-      <template v-else>
-        <el-alert type="warning" show-icon :closable="false" title="预约需要VIP会员" description="当前系统开启了预约VIP限制。升级为VIP即可预约车位并享受优惠。">
-          <template #footer>
-            <el-button type="primary" size="small" @click="goToVipPage">立即开通VIP</el-button>
-          </template>
-        </el-alert>
-      </template>
-    </div>
 
     <!-- 当前车辆与操作 -->
     <div class="vehicle-ops">
@@ -142,7 +129,7 @@ import ParkingLotVisualization from '@/components/ParkingLotVisualization.vue'
 import * as parkingApi from '@/api/parking'
 import * as reservationsApi from '@/api/reservations'
 import * as vehicleApi from '@/api/vehicle'
-import * as pricingApi from '@/api/pricing'
+// 已移除VIP体系，无需定价配置的VIP校验
 
 export default {
   name: 'MobileFindView',
@@ -181,16 +168,13 @@ export default {
       },
       lastReservationId: null,
       lastPaymentMessage: '',
-      // VIP 配置与状态
-      vipRequired: false,
-      hasActiveVip: false,
-      pricingConfig: null
+      // 已移除VIP体系相关状态
     }
   },
   mounted() {
     this.loadParkingLots()
     this.prepareAutoNavFromRoute()
-    this.loadVipRequirementAndStatus()
+    // 无VIP门控，直接加载
   },
   computed: {
     canShowExitNav() {
@@ -208,24 +192,7 @@ export default {
       this.navigationDistance = null
       this.navigationTime = null
     },
-    async loadVipRequirementAndStatus() {
-      try {
-        // 获取定价配置以判断是否开启预约VIP限制
-        const config = await pricingApi.getPricingConfig().catch(() => null)
-        this.pricingConfig = config
-        this.vipRequired = Boolean(config?.reservation?.vipRequired)
-      } catch {
-        this.vipRequired = false
-      }
-      try {
-        // 静默校验：使用 /users/me 的 vip_level 字段，不命中 /me/vip
-        const info = await this.$store.dispatch('user/getInfo').catch(() => null)
-        const level = info?.vip_level
-        this.hasActiveVip = Number.isFinite(level) && level > 0
-      } catch {
-        this.hasActiveVip = false
-      }
-    },
+    // 已移除VIP门控，无需加载
     async loadParkingLots() {
       try {
         this.loading = true
@@ -294,16 +261,8 @@ export default {
 
     // 检测用户类型选择合适车位类型
     async resolveSpaceType() {
-      // 优先使用 store 中的 vip_level（避免重复请求）
-      const level = this.$store?.state?.user?.vip_level
-      if (Number.isFinite(level) && level > 0) return 'vip'
-      try {
-        const info = await this.$store.dispatch('user/getInfo').catch(() => null)
-        const lvl = info?.vip_level
-        return Number.isFinite(lvl) && lvl > 0 ? 'vip' : 'standard'
-      } catch {
-        return 'standard'
-      }
+      // 无VIP体系，统一返回普通车位
+      return 'standard'
     },
 
     // 调用后端计算最近可用车位路径，并将结果传递给可视化
@@ -424,21 +383,14 @@ export default {
         this.$message.warning('请先选择车位')
         return
       }
-      if (this.vipRequired && !this.hasActiveVip) {
-        this.$message.warning('预约需要VIP会员，请先开通VIP')
-        this.goToVipPage()
-        return
-      }
+      // 已移除VIP门控，直接打开预约弹窗
       const now = new Date()
       const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000)
       this.reservationForm.start_time = now.toISOString()
       this.reservationForm.end_time = twoHoursLater.toISOString()
       this.reservationDialogVisible = true
     },
-    // 跳转到VIP页面
-    goToVipPage() {
-      this.$router.push('/mobile/vip')
-    },
+    // 已移除VIP页面跳转
     // 提交预约
     async submitReservation() {
       try {
@@ -571,9 +523,6 @@ export default {
   }
 }
 
-.vip-tip {
-  margin: 12px 0 16px 0;
-}
 
 .vehicle-card {
   display: flex;

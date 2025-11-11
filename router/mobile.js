@@ -10,7 +10,6 @@ import MobilePaymentView from '@/views/mobile/MobilePaymentView.vue'
 import MobileReservationsView from '@/views/mobile/MobileReservationsView.vue'
 import MobileHistoryView from '@/views/mobile/MobileHistoryView.vue'
 import MobileHelpView from '@/views/mobile/MobileHelpView.vue'
-import MobileVipView from '@/views/mobile/MobileVipView.vue'
 import MobileExitView from '@/views/mobile/MobileExitView.vue'
 
 const mobileRoutes = [
@@ -58,12 +57,6 @@ const mobileRoutes = [
     name: 'MobilePayment',
     component: MobilePaymentView,
     meta: { title: '支付设置', requiresAuth: true }
-  },
-  {
-    path: '/mobile/vip',
-    name: 'MobileVip',
-    component: MobileVipView,
-    meta: { title: 'VIP会员', requiresAuth: true }
   },
   {
     path: '/mobile/reservations',

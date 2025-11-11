@@ -13,7 +13,7 @@
             <el-icon><Download /></el-icon>
             导出数据
           </el-button>
-          <el-button type="primary" @click="showCreateDialog = true" class="modern-btn" v-permission="'parking:create'">
+          <el-button type="primary" @click="showCreateDialog = true" class="modern-btn" v-permission="'parking:add'">
             <el-icon><Plus /></el-icon>
             新建停车场
           </el-button>
@@ -457,59 +457,124 @@ export default {
 @import '@/assets/styles/modern-theme.css';
 
 .parking-management {
-  padding: var(--spacing-xl);
+  padding: 32px;
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   animation: fadeIn 0.5s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.parking-management::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(64, 158, 255, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(82, 196, 26, 0.1) 0%, transparent 50%);
+  z-index: -1;
 }
 
 .header-section {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: 32px;
   text-align: center;
+  position: relative;
+}
+
+.header-section::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(64, 158, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
 }
 
 .page-title {
   font-size: 2.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 8px;
   animation: slideInDown 0.6s ease-out;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .page-subtitle {
   font-size: 1.1rem;
-  color: var(--text-secondary);
+  color: #7f8c8d;
   margin-bottom: 0;
   animation: slideInUp 0.6s ease-out 0.2s both;
 }
 
 .parking-lots-container {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   animation: fadeInUp 0.8s ease-out 0.3s both;
+  position: relative;
+  overflow: hidden;
+}
+
+.parking-lots-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.03) 0%, rgba(82, 196, 26, 0.03) 100%);
+  z-index: -1;
 }
 
 .table-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 2px solid var(--border-light);
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.table-header::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #409eff 50%, transparent 100%);
 }
 
 .table-title {
   font-size: 1.3rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #2c3e50;
   margin: 0;
+  position: relative;
+}
+
+.table-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background: linear-gradient(90deg, #409eff 0%, #52c41a 100%);
+  border-radius: 2px;
 }
 
 .parking-lots-list {
@@ -546,7 +611,26 @@ export default {
 .pagination-container {
   display: flex;
   justify-content: center;
-  margin-top: var(--spacing-lg);
+  margin-top: 32px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.pagination-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.03) 0%, rgba(82, 196, 26, 0.03) 100%);
+  z-index: -1;
 }
 
 .parking-lot-detail {
@@ -561,44 +645,68 @@ export default {
 
 /* Modern theme overrides */
 :deep(.modern-table) {
-  border-radius: var(--border-radius-md);
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 :deep(.modern-table .el-table__header-wrapper) {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
 }
 
 :deep(.modern-table .el-table__header th) {
   background: transparent;
-  color: white;
+  color: #2c3e50;
   font-weight: 600;
   border: none;
+  padding: 16px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+:deep(.modern-table .el-table__body td) {
+  color: #2c3e50;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 16px 12px;
 }
 
 :deep(.modern-table .el-table__row:hover) {
-  background-color: rgba(var(--primary-color-rgb), 0.05);
+  background-color: rgba(64, 158, 255, 0.05);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
   transition: all 0.3s ease;
 }
 
 :deep(.modern-tag) {
-  border-radius: var(--border-radius-sm);
-  font-weight: 600;
-  animation: pulse 2s infinite;
+  border-radius: 20px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: 1px solid currentColor;
+  padding: 4px 12px;
 }
 
 :deep(.modern-tag.el-tag--success) {
-  background: linear-gradient(135deg, var(--success-color) 0%, var(--success-light) 100%);
-  border: none;
-  color: white;
+  background: rgba(82, 196, 26, 0.1);
+  border-color: #52c41a;
+  color: #52c41a;
 }
 
-:deep(.modern-tag.el-tag--info) {
-  background: linear-gradient(135deg, var(--info-color) 0%, var(--info-light) 100%);
-  border: none;
-  color: white;
+:deep(.modern-tag.el-tag--warning) {
+  background: rgba(250, 173, 20, 0.1);
+  border-color: #faad14;
+  color: #faad14;
+}
+
+:deep(.modern-tag.el-tag--danger) {
+  background: rgba(245, 34, 45, 0.1);
+  border-color: #f5222d;
+  color: #f5222d;
+}
+
+:deep(.modern-tag:hover) {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 :deep(.modern-switch) {
@@ -655,13 +763,30 @@ export default {
     font-size: 12px;
   }
   
-  :deep(.modern-btn-small),
-  :deep(.modern-btn-warning-small),
-  :deep(.modern-btn-danger-small) {
-    padding: 6px 10px;
-    font-size: 11px;
-    margin: 2px;
-  }
+  :deep(.modern-btn-small) {
+  padding: 6px 10px;
+  font-size: 11px;
+  margin: 2px;
+  border-radius: 20px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #409eff 0%, #52c41a 100%);
+  border: none;
+  color: white;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
+}
+
+:deep(.modern-btn-small:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.4);
+}
+
+:deep(.modern-btn-warning-small),
+:deep(.modern-btn-danger-small) {
+  padding: 6px 10px;
+  font-size: 11px;
+  margin: 2px;
+}
   
   .parking-lots-container {
     padding: var(--spacing-md);
@@ -704,18 +829,57 @@ export default {
   
   /* 分页组件优化 */
   .pagination-container :deep(.el-pagination) {
-    font-size: 12px;
+    font-size: 14px;
   }
   
   .pagination-container :deep(.el-pagination button) {
-    padding: 0 8px;
-    height: 28px;
+    padding: 0 12px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #2c3e50;
+    transition: all 0.3s ease;
+  }
+  
+  .pagination-container :deep(.el-pagination button:hover) {
+    background: rgba(64, 158, 255, 0.1);
+    border-color: #409eff;
+    color: #409eff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
+  }
+  
+  .pagination-container :deep(.el-pagination button:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
   
   .pagination-container :deep(.el-pager li) {
-    height: 28px;
-    line-height: 28px;
-    min-width: 28px;
+    height: 32px;
+    line-height: 32px;
+    min-width: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #2c3e50;
+    transition: all 0.3s ease;
+    font-weight: 500;
+  }
+  
+  .pagination-container :deep(.el-pager li:hover) {
+    background: rgba(64, 158, 255, 0.1);
+    border-color: #409eff;
+    color: #409eff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
+  }
+  
+  .pagination-container :deep(.el-pager li.active) {
+    background: linear-gradient(135deg, #409eff 0%, #52c41a 100%);
+    border: none;
+    color: white;
+    box-shadow: 0 2px 8px rgba(64, 158, 255, 0.4);
   }
 }
 

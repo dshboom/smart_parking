@@ -88,58 +88,6 @@
           <div class="tab-content">
             <div class="settings-section">
               <h3 class="section-title">
-                <el-icon><Position /></el-icon>
-                停车场设置
-              </h3>
-              <el-form :model="parkingSettings" label-width="120px" class="modern-form">
-                <el-form-item label="停车场名称">
-                  <el-input v-model="parkingSettings.parkingLotName" placeholder="请输入停车场名称" />
-                </el-form-item>
-                <el-form-item label="总停车位">
-                  <el-input-number 
-                    v-model="parkingSettings.totalSpaces" 
-                    :min="1" 
-                    :max="10000"
-                    controls-position="right"
-                  />
-                </el-form-item>
-                <el-form-item label="预留车位数">
-                  <el-input-number 
-                    v-model="parkingSettings.reservedSpaces" 
-                    :min="0" 
-                    :max="parkingSettings.totalSpaces"
-                    controls-position="right"
-                  />
-                </el-form-item>
-                <el-form-item label="地址">
-                  <el-input 
-                    v-model="parkingSettings.address" 
-                    type="textarea" 
-                    :rows="2"
-                    placeholder="请输入停车场地址"
-                  />
-                </el-form-item>
-                <el-form-item label="联系电话">
-                  <el-input v-model="parkingSettings.contactPhone" placeholder="请输入联系电话" />
-                </el-form-item>
-                <el-form-item label="营业时间">
-                  <el-time-picker
-                    v-model="parkingSettings.openTime"
-                    placeholder="开始时间"
-                    format="HH:mm"
-                  />
-                  <span style="margin: 0 8px;">至</span>
-                  <el-time-picker
-                    v-model="parkingSettings.closeTime"
-                    placeholder="结束时间"
-                    format="HH:mm"
-                  />
-                </el-form-item>
-              </el-form>
-            </div>
-
-            <div class="settings-section">
-              <h3 class="section-title">
                 <el-icon><Money /></el-icon>
                 收费规则
               </h3>
@@ -246,264 +194,7 @@
                 <el-form-item label="默认角色">
                   <el-select v-model="userSettings.defaultRole" placeholder="请选择默认角色">
                     <el-option label="普通用户" value="user" />
-                    <el-option label="VIP用户" value="vip" />
                   </el-select>
-                </el-form-item>
-              </el-form>
-            </div>
-
-            <div class="settings-section">
-              <h3 class="section-title">
-                <el-icon><Key /></el-icon>
-                安全设置
-              </h3>
-              <el-form :model="userSettings" label-width="120px" class="modern-form">
-                <el-form-item label="密码最小长度">
-                  <el-input-number 
-                    v-model="userSettings.minPasswordLength" 
-                    :min="6" 
-                    :max="32"
-                    controls-position="right"
-                  />
-                </el-form-item>
-                <el-form-item label="密码复杂度">
-                  <el-checkbox-group v-model="userSettings.passwordComplexity">
-                    <el-checkbox label="uppercase">包含大写字母</el-checkbox>
-                    <el-checkbox label="lowercase">包含小写字母</el-checkbox>
-                    <el-checkbox label="number">包含数字</el-checkbox>
-                    <el-checkbox label="special">包含特殊字符</el-checkbox>
-                  </el-checkbox-group>
-                </el-form-item>
-                <el-form-item label="登录失败次数">
-                  <el-input-number 
-                    v-model="userSettings.maxLoginAttempts" 
-                    :min="3" 
-                    :max="10"
-                    controls-position="right"
-                  />
-                </el-form-item>
-                <el-form-item label="锁定时间(分钟)">
-                  <el-input-number 
-                    v-model="userSettings.lockoutDuration" 
-                    :min="5" 
-                    :max="1440"
-                    controls-position="right"
-                  />
-                </el-form-item>
-                <el-form-item label="会话超时(分钟)">
-                  <el-input-number 
-                    v-model="userSettings.sessionTimeout" 
-                    :min="5" 
-                    :max="1440"
-                    controls-position="right"
-                  />
-                </el-form-item>
-              </el-form>
-            </div>
-          </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="通知配置" name="notification">
-          <div class="tab-content">
-            <div class="settings-section">
-              <h3 class="section-title">
-                <el-icon><Message /></el-icon>
-                邮件通知
-              </h3>
-              <el-form :model="notificationSettings" label-width="120px" class="modern-form">
-                <el-form-item label="启用邮件通知">
-                  <el-switch 
-                    v-model="notificationSettings.emailEnabled" 
-                    active-text="开启"
-                    inactive-text="关闭"
-                  />
-                </el-form-item>
-                <el-form-item label="SMTP服务器">
-                  <el-input v-model="notificationSettings.smtpServer" placeholder="请输入SMTP服务器地址" />
-                </el-form-item>
-                <el-form-item label="SMTP端口">
-                  <el-input-number 
-                    v-model="notificationSettings.smtpPort" 
-                    :min="1" 
-                    :max="65535"
-                    controls-position="right"
-                  />
-                </el-form-item>
-                <el-form-item label="发件人邮箱">
-                  <el-input v-model="notificationSettings.senderEmail" placeholder="请输入发件人邮箱" />
-                </el-form-item>
-                <el-form-item label="发件人名称">
-                  <el-input v-model="notificationSettings.senderName" placeholder="请输入发件人名称" />
-                </el-form-item>
-                <el-form-item label="SMTP用户名">
-                  <el-input v-model="notificationSettings.smtpUsername" placeholder="请输入SMTP用户名" />
-                </el-form-item>
-                <el-form-item label="SMTP密码">
-                  <el-input 
-                    v-model="notificationSettings.smtpPassword" 
-                    type="password"
-                    placeholder="请输入SMTP密码"
-                    show-password
-                  />
-                </el-form-item>
-                <el-form-item label="SSL/TLS">
-                  <el-switch 
-                    v-model="notificationSettings.smtpSSL" 
-                    active-text="开启"
-                    inactive-text="关闭"
-                  />
-                </el-form-item>
-              </el-form>
-            </div>
-
-            <div class="settings-section">
-              <h3 class="section-title">
-                <el-icon><Cellphone /></el-icon>
-                短信通知
-              </h3>
-              <el-form :model="notificationSettings" label-width="120px" class="modern-form">
-                <el-form-item label="启用短信通知">
-                  <el-switch 
-                    v-model="notificationSettings.smsEnabled" 
-                    active-text="开启"
-                    inactive-text="关闭"
-                  />
-                </el-form-item>
-                <el-form-item label="短信服务商">
-                  <el-select v-model="notificationSettings.smsProvider" placeholder="请选择短信服务商">
-                    <el-option label="阿里云" value="aliyun" />
-                    <el-option label="腾讯云" value="tencent" />
-                    <el-option label="华为云" value="huawei" />
-                  </el-select>
-                </el-form-item>
-                <el-form-item label="AccessKey">
-                  <el-input v-model="notificationSettings.smsAccessKey" placeholder="请输入AccessKey" />
-                </el-form-item>
-                <el-form-item label="SecretKey">
-                  <el-input 
-                    v-model="notificationSettings.smsSecretKey" 
-                    type="password"
-                    placeholder="请输入SecretKey"
-                    show-password
-                  />
-                </el-form-item>
-                <el-form-item label="短信签名">
-                  <el-input v-model="notificationSettings.smsSignName" placeholder="请输入短信签名" />
-                </el-form-item>
-                <el-form-item label="模板ID">
-                  <el-input v-model="notificationSettings.smsTemplateId" placeholder="请输入短信模板ID" />
-                </el-form-item>
-              </el-form>
-            </div>
-          </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="系统日志" name="logs">
-          <div class="tab-content">
-            <div class="settings-section">
-              <h3 class="section-title">
-                <el-icon><Document /></el-icon>
-                日志配置
-              </h3>
-              <el-form :model="logSettings" label-width="120px" class="modern-form">
-                <el-form-item label="日志级别">
-                  <el-select v-model="logSettings.logLevel" placeholder="请选择日志级别">
-                    <el-option label="DEBUG" value="debug" />
-                    <el-option label="INFO" value="info" />
-                    <el-option label="WARNING" value="warning" />
-                    <el-option label="ERROR" value="error" />
-                    <el-option label="CRITICAL" value="critical" />
-                  </el-select>
-                </el-form-item>
-                <el-form-item label="日志保留天数">
-                  <el-input-number 
-                    v-model="logSettings.logRetentionDays" 
-                    :min="1" 
-                    :max="365"
-                    controls-position="right"
-                  />
-                </el-form-item>
-                <el-form-item label="启用文件日志">
-                  <el-switch 
-                    v-model="logSettings.fileLogging" 
-                    active-text="开启"
-                    inactive-text="关闭"
-                  />
-                </el-form-item>
-                <el-form-item label="日志文件大小">
-                  <el-input-number 
-                    v-model="logSettings.maxLogFileSize" 
-                    :min="1" 
-                    :max="1000"
-                    controls-position="right"
-                  />
-                  <span style="margin-left: 8px;">MB</span>
-                </el-form-item>
-                <el-form-item label="启用数据库日志">
-                  <el-switch 
-                    v-model="logSettings.databaseLogging" 
-                    active-text="开启"
-                    inactive-text="关闭"
-                  />
-                </el-form-item>
-                <el-form-item label="启用操作日志">
-                  <el-switch 
-                    v-model="logSettings.operationLogging" 
-                    active-text="开启"
-                    inactive-text="关闭"
-                  />
-                </el-form-item>
-              </el-form>
-            </div>
-
-            <div class="settings-section">
-              <h3 class="section-title">
-                <el-icon><Monitor /></el-icon>
-                系统监控
-              </h3>
-              <el-form :model="logSettings" label-width="120px" class="modern-form">
-                <el-form-item label="启用监控">
-                  <el-switch 
-                    v-model="logSettings.monitoringEnabled" 
-                    active-text="开启"
-                    inactive-text="关闭"
-                  />
-                </el-form-item>
-                <el-form-item label="监控间隔">
-                  <el-input-number 
-                    v-model="logSettings.monitoringInterval" 
-                    :min="1" 
-                    :max="3600"
-                    controls-position="right"
-                  />
-                  <span style="margin-left: 8px;">秒</span>
-                </el-form-item>
-                <el-form-item label="CPU告警阈值">
-                  <el-input-number 
-                    v-model="logSettings.cpuAlertThreshold" 
-                    :min="50" 
-                    :max="100"
-                    controls-position="right"
-                  />
-                  <span style="margin-left: 8px;">%</span>
-                </el-form-item>
-                <el-form-item label="内存告警阈值">
-                  <el-input-number 
-                    v-model="logSettings.memoryAlertThreshold" 
-                    :min="50" 
-                    :max="100"
-                    controls-position="right"
-                  />
-                  <span style="margin-left: 8px;">%</span>
-                </el-form-item>
-                <el-form-item label="磁盘告警阈值">
-                  <el-input-number 
-                    v-model="logSettings.diskAlertThreshold" 
-                    :min="50" 
-                    :max="100"
-                    controls-position="right"
-                  />
-                  <span style="margin-left: 8px;">%</span>
                 </el-form-item>
               </el-form>
             </div>
@@ -553,13 +244,6 @@ export default {
 
     // 停车设置
     const parkingSettings = reactive({
-      parkingLotName: '智能停车场',
-      totalSpaces: 500,
-      reservedSpaces: 50,
-      address: '北京市朝阳区xxx路xxx号',
-      contactPhone: '010-12345678',
-      openTime: new Date(2024, 0, 1, 6, 0),
-      closeTime: new Date(2024, 0, 1, 22, 0),
       freeDuration: 30,
       firstHourFee: 5.00,
       hourlyFee: 3.00,
@@ -575,46 +259,10 @@ export default {
       allowRegistration: true,
       emailVerification: true,
       phoneVerification: false,
-      defaultRole: 'user',
-      minPasswordLength: 8,
-      passwordComplexity: ['uppercase', 'lowercase', 'number'],
-      maxLoginAttempts: 5,
-      lockoutDuration: 30,
-      sessionTimeout: 120
+      defaultRole: 'user'
     })
 
-    // 通知设置
-    const notificationSettings = reactive({
-      emailEnabled: false,
-      smtpServer: '',
-      smtpPort: 587,
-      senderEmail: '',
-      senderName: '智能停车系统',
-      smtpUsername: '',
-      smtpPassword: '',
-      smtpSSL: true,
-      smsEnabled: false,
-      smsProvider: 'aliyun',
-      smsAccessKey: '',
-      smsSecretKey: '',
-      smsSignName: '',
-      smsTemplateId: ''
-    })
 
-    // 日志设置
-    const logSettings = reactive({
-      logLevel: 'info',
-      logRetentionDays: 30,
-      fileLogging: true,
-      maxLogFileSize: 100,
-      databaseLogging: true,
-      operationLogging: true,
-      monitoringEnabled: true,
-      monitoringInterval: 60,
-      cpuAlertThreshold: 80,
-      memoryAlertThreshold: 85,
-      diskAlertThreshold: 90
-    })
 
     // 加载设置
     const loadSettings = () => {
@@ -626,8 +274,7 @@ export default {
           Object.assign(basicSettings, settings.basic || {})
           Object.assign(parkingSettings, settings.parking || {})
           Object.assign(userSettings, settings.user || {})
-          Object.assign(notificationSettings, settings.notification || {})
-          Object.assign(logSettings, settings.logs || {})
+          // Removed notification and log settings
         }
       } catch (error) {
         console.error('加载设置失败:', error)
@@ -640,9 +287,7 @@ export default {
         const settings = {
           basic: basicSettings,
           parking: parkingSettings,
-          user: userSettings,
-          notification: notificationSettings,
-          logs: logSettings
+          user: userSettings
         }
         
         localStorage.setItem('systemSettings', JSON.stringify(settings))
@@ -672,18 +317,6 @@ export default {
     // 测试连接
     const testSettings = async () => {
       try {
-        // 测试邮件配置
-        if (notificationSettings.emailEnabled) {
-          // 这里可以添加实际的邮件测试逻辑
-          ElMessage.info('邮件配置测试功能开发中...')
-        }
-        
-        // 测试短信配置
-        if (notificationSettings.smsEnabled) {
-          // 这里可以添加实际的短信测试逻辑
-          ElMessage.info('短信配置测试功能开发中...')
-        }
-        
         ElMessage.success('测试完成')
       } catch (error) {
         ElMessage.error('测试失败')
@@ -699,8 +332,6 @@ export default {
       basicSettings,
       parkingSettings,
       userSettings,
-      notificationSettings,
-      logSettings,
       saveSettings,
       resetSettings,
       testSettings
@@ -714,14 +345,40 @@ export default {
 @import '@/styles/modern-theme.css';
 
 .system-settings {
-  padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 32px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.system-settings::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(64, 158, 255, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(82, 196, 26, 0.1) 0%, transparent 50%);
+  z-index: -1;
 }
 
 /* 页面标题 */
 .page-header {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  right: -20px;
+  height: 4px;
+  background: linear-gradient(90deg, #409eff 0%, #52c41a 100%);
+  border-radius: 2px;
 }
 
 .header-content {
@@ -733,18 +390,20 @@ export default {
 }
 
 .title-section .page-title {
-  font-size: 32px;
+  font-size: 2.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
+  position: relative;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .title-section .page-subtitle {
-  font-size: 14px;
-  color: #8b949e;
+  font-size: 1.1rem;
+  color: #7f8c8d;
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -753,32 +412,84 @@ export default {
 /* 设置标签页 */
 .settings-tabs {
   margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  position: relative;
+}
+
+.settings-tabs::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.03) 0%, rgba(82, 196, 26, 0.03) 100%);
+  z-index: -1;
 }
 
 .tab-content {
   padding: 24px 0;
 }
 
+/* 设置区域卡片 */
 .settings-section {
   margin-bottom: 32px;
   padding: 24px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.settings-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.settings-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.02) 0%, rgba(82, 196, 26, 0.02) 100%);
+  z-index: -1;
 }
 
 .section-title {
-  font-size: 18px;
+  font-size: 1.3rem;
   font-weight: 600;
-  color: #fff;
+  color: #2c3e50;
   margin: 0 0 20px 0;
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background: linear-gradient(90deg, #409eff 0%, #52c41a 100%);
+  border-radius: 2px;
 }
 
 .section-title .el-icon {
-  color: #667eea;
+  color: #409eff;
   font-size: 20px;
 }
 
@@ -791,7 +502,7 @@ export default {
 }
 
 .modern-form .el-form-item__label {
-  color: #e6edf3;
+  color: #2c3e50;
   font-weight: 500;
 }
 
@@ -808,50 +519,221 @@ export default {
   gap: 12px;
   justify-content: center;
   padding: 24px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   margin-top: 24px;
+  position: relative;
+  overflow: hidden;
 }
 
+.settings-actions::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.02) 0%, rgba(82, 196, 26, 0.02) 100%);
+  z-index: -1;
+}
+
+/* 操作按钮 */
 .save-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #409eff 0%, #52c41a 100%);
   border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
   min-width: 120px;
 }
 
+.save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(64, 158, 255, 0.4);
+  background: linear-gradient(135deg, #52c41a 0%, #409eff 100%);
+}
+
+.save-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
+}
+
 .reset-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  color: #2c3e50;
+  font-weight: 500;
+  transition: all 0.3s ease;
   min-width: 120px;
 }
 
 .reset-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 1);
+  border-color: #409eff;
+  color: #409eff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.reset-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .test-btn {
-  background: rgba(255, 193, 7, 0.2);
-  border: 1px solid rgba(255, 193, 7, 0.3);
-  color: #ffc107;
+  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
   min-width: 120px;
 }
 
 .test-btn:hover {
-  background: rgba(255, 193, 7, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 193, 7, 0.4);
+  background: linear-gradient(135deg, #ff9800 0%, #ffc107 100%);
+}
+
+.test-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+  .system-settings {
+    padding: 16px;
+  }
+  
+  .system-settings::before {
+    display: none;
+  }
+  
+  .page-header {
+    margin-bottom: 24px;
+  }
+  
+  .page-header::before {
+    display: none;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .title-section .page-title {
+    font-size: 2rem;
+  }
+  
+  .title-section .page-subtitle {
+    font-size: 1rem;
+  }
+  
+  .settings-tabs {
+    padding: 16px;
+  }
+  
+  .settings-tabs::before {
+    display: none;
+  }
+  
+  .tab-content {
+    padding: 16px 0;
+  }
+  
+  .settings-section {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .settings-section::before {
+    display: none;
+  }
+  
+  .section-title {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+  }
+  
+  .section-title::after {
+    width: 40px;
+    height: 2px;
+  }
+  
+  .modern-form {
+    max-width: 100%;
+  }
+  
+  .el-form-item {
+    margin-bottom: 16px;
+  }
+  
+  .el-form-item__label {
+    font-size: 14px;
+  }
+  
+  .el-input__inner,
+  .el-textarea__inner {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+  
   .settings-actions {
     flex-direction: column;
+    padding: 16px;
+    gap: 8px;
+  }
+  
+  .settings-actions::before {
+    display: none;
   }
   
   .save-btn,
   .reset-btn,
   .test-btn {
     width: 100%;
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .system-settings {
+    padding: 12px;
+  }
+  
+  .title-section .page-title {
+    font-size: 1.8rem;
+  }
+  
+  .settings-tabs .el-tabs__item {
+    padding: 0 8px;
+    font-size: 13px;
+  }
+  
+  .settings-section {
+    padding: 12px;
+  }
+  
+  .section-title {
+    font-size: 1.1rem;
+  }
+  
+  .el-form-item__label {
+    font-size: 13px;
+  }
+  
+  .el-input__inner,
+  .el-textarea__inner {
+    font-size: 13px;
   }
 }
 </style>

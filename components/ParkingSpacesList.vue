@@ -15,7 +15,7 @@
             <el-option label="全部" value="" />
             <el-option label="普通" value="regular" />
             <el-option label="残疾人" value="disabled" />
-            <el-option label="VIP" value="vip" />
+            
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -313,7 +313,7 @@ export default {
       const typeMap = {
         regular: '普通',
         disabled: '残疾人',
-        vip: 'VIP'
+        
       }
       return typeMap[type] || type
     }

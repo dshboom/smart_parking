@@ -8,10 +8,7 @@
           <p class="page-subtitle">Vehicle Entry & Exit Records</p>
         </div>
         <div class="header-actions">
-          <el-button type="primary" class="modern-btn" @click="refreshData">
-            <el-icon><Refresh /></el-icon>
-            刷新数据
-          </el-button>
+          <!-- 头部操作按钮已移除 -->
         </div>
       </div>
     </div>
@@ -671,20 +668,56 @@ export default {
 @import '@/assets/styles/modern-theme.css';
 
 .vehicle-records-container {
-  padding: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 1400px;
+  margin: 0 auto;
+  border-radius: 20px;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  position: relative;
+}
+
+.vehicle-records-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 /* 现代化页面标题 */
 .page-header {
   margin-bottom: 24px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #409eff, #5da8ff);
+  opacity: 0.8;
 }
 
 .header-content {
@@ -692,19 +725,20 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 24px;
+  position: relative;
 }
 
 .page-title {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 8px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  color: #2c3e50;
+  margin-bottom: 6px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .page-subtitle {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  color: #7f8c8d;
   font-weight: 400;
 }
 
@@ -725,20 +759,30 @@ export default {
 /* 现代化筛选区域 */
 .filter-section {
   margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  transition: all 0.4s ease;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
 }
 
 .card-title {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: #2c3e50;
   margin: 0;
   display: flex;
   align-items: center;
@@ -746,7 +790,7 @@ export default {
 }
 
 .card-content {
-  padding: 24px;
+  padding: 0;
 }
 
 .modern-filter-form {
@@ -760,20 +804,44 @@ export default {
 }
 
 .search-btn {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
   border: none;
   color: white;
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.3);
+  transition: all 0.3s ease;
+}
+
+.search-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(82, 196, 26, 0.4);
 }
 
 .reset-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #606266;
+  transition: all 0.3s ease;
+}
+
+.reset-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: #409eff;
+  color: #409eff;
+  transform: translateY(-1px);
 }
 
 /* 现代化表格 */
 .table-section {
   margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  transition: all 0.4s ease;
 }
 
 .card-actions {
@@ -782,43 +850,51 @@ export default {
 }
 
 .export-btn {
-  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  background: linear-gradient(135deg, #409eff 0%, #5da8ff 100%);
   border: none;
   color: white;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.export-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.4);
 }
 
 .modern-table {
   background: transparent;
   border-radius: 12px;
   overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .modern-table :deep(.el-table__header-wrapper) {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
 }
 
 .modern-table :deep(.el-table__header th) {
   background: transparent;
-  color: #ffffff;
+  color: #2c3e50;
   font-weight: 600;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   padding: 16px 12px;
 }
 
 .modern-table :deep(.el-table__body tr) {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.9);
   transition: all 0.3s ease;
 }
 
 .modern-table :deep(.el-table__body tr:hover) {
-  background: rgba(255, 255, 255, 0.15);
-  transform: scale(1.01);
+  background: rgba(240, 247, 255, 0.95);
+  transform: scale(1.005);
 }
 
 .modern-table :deep(.el-table__body td) {
-  color: #ffffff;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #2c3e50;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   padding: 16px 12px;
 }
 
@@ -834,7 +910,7 @@ export default {
 /* 表格单元格样式 */
 .index-number {
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
+  color: #7f8c8d;
 }
 
 .license-plate-cell {
@@ -842,11 +918,12 @@ export default {
   align-items: center;
   gap: 8px;
   justify-content: center;
+  color: #2c3e50;
 }
 
 .plate-text {
   font-weight: 600;
-  color: #ffffff;
+  color: #2c3e50;
 }
 
 .time-cell {
@@ -854,7 +931,7 @@ export default {
   align-items: center;
   gap: 6px;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.9);
+  color: #7f8c8d;
 }
 
 .duration-cell {
@@ -862,7 +939,7 @@ export default {
   align-items: center;
   gap: 6px;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.9);
+  color: #7f8c8d;
 }
 
 .fee-cell {
@@ -871,7 +948,7 @@ export default {
 
 .fee-amount {
   font-weight: 600;
-  color: #4CAF50;
+  color: #52c41a;
 }
 
 .no-data {
@@ -888,52 +965,85 @@ export default {
   border-radius: 20px;
   font-weight: 500;
   backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
 .status-tag.in-parking {
-  background: rgba(76, 175, 80, 0.2);
-  border: 1px solid rgba(76, 175, 80, 0.3);
-  color: #4CAF50;
+  background: rgba(82, 196, 26, 0.15);
+  border: 1px solid rgba(82, 196, 26, 0.3);
+  color: #52c41a;
 }
 
 .status-tag.exited {
-  background: rgba(158, 158, 158, 0.2);
+  background: rgba(158, 158, 158, 0.15);
   border: 1px solid rgba(158, 158, 158, 0.3);
-  color: #9E9E9E;
+  color: #8c8c8c;
+}
+
+.status-tag:hover {
+  transform: scale(1.05);
 }
 
 .action-btn {
-  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  background: linear-gradient(135deg, #409eff 0%, #5da8ff 100%);
   border: none;
   color: white;
   padding: 8px 16px;
   border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.4);
 }
 
 /* 现代化分页 */
 .pagination-section {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  margin-top: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  position: relative;
   display: flex;
   justify-content: center;
 }
 
-.modern-pagination {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+.pagination-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.05) 0%, rgba(82, 196, 26, 0.05) 100%);
   border-radius: 16px;
-  padding: 16px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: -1;
+}
+
+.modern-pagination {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 12px 20px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .pagination-modern :deep(.el-pagination) {
-  color: rgba(255, 255, 255, 0.8);
+  color: #2c3e50;
 }
 
 .pagination-modern :deep(.el-pagination .btn-prev),
 .pagination-modern :deep(.el-pagination .btn-next),
 .pagination-modern :deep(.el-pagination .el-pager li) {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  color: #2c3e50;
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
@@ -941,14 +1051,55 @@ export default {
 .pagination-modern :deep(.el-pagination .el-pager li:hover),
 .pagination-modern :deep(.el-pagination .btn-prev:hover),
 .pagination-modern :deep(.el-pagination .btn-next:hover) {
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  background: rgba(64, 158, 255, 0.1);
+  border-color: rgba(64, 158, 255, 0.2);
+  color: #409eff;
+}
+
+.pagination-modern :deep(.el-pagination .btn-prev:disabled),
+.pagination-modern :deep(.el-pagination .btn-next:disabled) {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.05);
+  color: rgba(44, 62, 80, 0.3);
 }
 
 .pagination-modern :deep(.el-pagination .el-pager li.active) {
-  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-  border-color: #2196F3;
+  background: linear-gradient(135deg, #409eff 0%, #5da8ff 100%);
+  border-color: transparent;
   color: #ffffff;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+}
+
+.page-size-selector {
+  margin-right: 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.9);
+  color: #2c3e50;
+  font-weight: 500;
+  padding: 6px 12px;
+  transition: all 0.3s ease;
+}
+
+.page-size-selector:hover {
+  background: rgba(64, 158, 255, 0.1);
+  border-color: rgba(64, 158, 255, 0.2);
+}
+
+.page-jump-input {
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.9);
+  color: #2c3e50;
+  font-weight: 500;
+  margin: 0 8px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.page-jump-input:hover {
+  background: rgba(64, 158, 255, 0.1);
+  border-color: rgba(64, 158, 255, 0.2);
 }
 
 /* 统计卡片基础样式 */
@@ -963,16 +1114,17 @@ export default {
 }
 
 .stat-card {
-  background: var(--card-gradient);
-  border-radius: var(--border-radius-xl);
-  padding: var(--spacing-xl);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 24px;
   display: flex;
   align-items: center;
-  box-shadow: var(--shadow-md);
-  transition: all var(--transition-normal) ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--border-light);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .stat-card:hover {
@@ -1011,22 +1163,22 @@ export default {
 }
 
 .stat-icon.total {
-  background: var(--primary-gradient);
+  background: linear-gradient(135deg, #409eff 0%, #5da8ff 100%);
   color: white;
 }
 
 .stat-icon.enter {
-  background: var(--success-gradient);
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
   color: white;
 }
 
 .stat-icon.exit {
-  background: var(--error-gradient);
+  background: linear-gradient(135deg, #faad14 0%, #ffc53d 100%);
   color: white;
 }
 
 .stat-icon.revenue {
-  background: var(--warning-gradient);
+  background: linear-gradient(135deg, #722ed1 0%, #9254de 100%);
   color: white;
 }
 
@@ -1040,17 +1192,16 @@ export default {
 }
 
 .stat-number {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-xs);
-  text-shadow: 0 1px 2px var(--shadow-light);
+  font-size: 28px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 4px;
 }
 
 .stat-label {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  font-weight: var(--font-weight-medium);
+  font-size: 14px;
+  color: #7f8c8d;
+  font-weight: 500;
 }
 
 /* 响应式设计 */

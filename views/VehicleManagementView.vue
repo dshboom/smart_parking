@@ -8,10 +8,7 @@
           <p class="page-subtitle">Vehicle Management</p>
         </div>
         <div class="header-actions">
-          <el-button type="primary" class="modern-btn" @click="refreshData">
-            <el-icon><Refresh /></el-icon>
-            刷新数据
-          </el-button>
+          <!-- 头部操作按钮已移除 -->
         </div>
       </div>
     </div>

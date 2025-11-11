@@ -41,7 +41,7 @@
             <el-form-item label="车位类型">
               <el-select :modelValue="selectedSpot.space_type" @update:modelValue="$emit('update:selectedSpot', { ...selectedSpot, space_type: $event })" style="width: 160px">
                 <el-option label="普通" value="standard" />
-                <el-option label="VIP" value="vip" />
+                <el-option label="残疾人" value="disabled" />
               </el-select>
             </el-form-item>
             <el-form-item label="维护停用">

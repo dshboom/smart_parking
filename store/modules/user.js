@@ -1,4 +1,4 @@
-import { login, logout, getInfo, register, updateMe, getMyStats, getMyVip, upgradeMyVip } from '@/api/user'
+import { login, logout, getInfo, register, updateMe, getMyStats } from '@/api/user'
 import { getUserBalance, rechargeBalance, withdrawBalance, getUserTransactions, getPaymentMethods as apiGetPaymentMethods } from '@/api/payments'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import { resetRouter } from '@/router'
@@ -9,7 +9,7 @@ const getDefaultState = () => {
     name: localStorage.getItem('name') || '',
     avatar: localStorage.getItem('avatar') || '',
     status: localStorage.getItem('user_status') || '',
-    vip_level: null
+    // 移除VIP相关状态
   }
 }
 
@@ -34,9 +34,7 @@ const mutations = {
     state.status = status
     localStorage.setItem('user_status', status)
   },
-  SET_VIP_LEVEL: (state, level) => {
-    state.vip_level = level
-  }
+  // 移除VIP等级 mutation
 }
 
 const actions = {
@@ -77,10 +75,9 @@ const actions = {
           return reject('Verification failed, please Login again.')
         }
 
-        const { username, role, vip_level } = response
+        const { username, role } = response
         commit('SET_NAME', username)
         commit('SET_STATUS', role)
-        commit('SET_VIP_LEVEL', Number.isFinite(vip_level) ? vip_level : 0)
         resolve(response)
       }).catch(error => {
         reject(error)
@@ -99,53 +96,7 @@ const actions = {
     })
   },
 
-  // get current user's VIP membership
-  // 为避免未开通会员时出现 404（/users/me/vip），此处增加守卫：
-  // 1) 若 state.vip_level <= 0，则尝试刷新 getInfo；
-  // 2) 仍无会员则直接返回 null，不请求 /me/vip；
-  // 3) 有会员再请求 /me/vip 获取完整会员详情。
-  getVipMe({ state, dispatch }) {
-    return new Promise((resolve, reject) => {
-      const run = async () => {
-        // 读取当前已知的会员等级（来自 /users/me 的 vip_level）
-        let level = Number(state.vip_level || 0)
-
-        // 若未知或非会员，尝试刷新一次用户信息以获取最新 vip_level
-        if (!Number.isFinite(level) || level <= 0) {
-          try {
-            const info = await dispatch('getInfo').catch(() => null)
-            level = Number((info && info.vip_level) != null ? info.vip_level : (state.vip_level || 0))
-          } catch (_) {
-            // 忽略刷新失败，继续按非会员处理
-          }
-        }
-
-        // 非会员：不触发 /me/vip，避免网络层 404 噪音
-        if (!Number.isFinite(level) || level <= 0) {
-          return resolve(null)
-        }
-
-        // 会员：请求具体会员信息
-        try {
-          const resp = await getMyVip()
-          resolve(resp)
-        } catch (error) {
-          reject(error)
-        }
-      }
-
-      run()
-    })
-  },
-
-  // upgrade current user's VIP membership
-  upgradeVip(_, plan) {
-    return new Promise((resolve, reject) => {
-      upgradeMyVip(plan).then(response => {
-        resolve(response)
-      }).catch(error => reject(error))
-    })
-  },
+  // 移除VIP相关动作
 
   // user logout
   logout({ commit, state }) {

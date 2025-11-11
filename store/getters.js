@@ -25,6 +25,8 @@ const getters = {
       permissions.push(
         // 管理端基础视图权限
         'dashboard:view',
+        // 兼容视图预览权限
+        'parking:view',
         'user:list', 'user:add', 'user:edit', 'user:delete', 'user:status',
         'vehicle:list', 'vehicle:add', 'vehicle:edit', 'vehicle:delete',
         'parking:list', 'parking:add', 'parking:edit', 'parking:delete',

@@ -77,24 +77,7 @@ export function getMyParkingHistory(params = {}) {
   })
 }
 
-// 当前用户VIP信息
-export function getMyVip() {
-  return request({
-    url: '/users/me/vip',
-    method: 'get',
-    // VIP检查默认静默：未开通返回404不弹Toast
-    suppressErrorToast: true
-  })
-}
-
-// 当前用户开通/升级VIP
-export function upgradeMyVip(plan) {
-  return request({
-    url: '/users/me/vip/upgrade',
-    method: 'post',
-    data: { plan }
-  })
-}
+// 已移除VIP相关API：getMyVip、upgradeMyVip
 
 export function fetchList(query) {
   return request({
@@ -180,36 +163,7 @@ export function removeMyVehicle(licensePlate) {
   })
 }
 
-// ===== VIP 管理相关 =====
-export function getVip(userId) {
-  return request({
-    url: `/users/${userId}/vip`,
-    method: 'get'
-  })
-}
-
-export function createVip(userId, data) {
-  return request({
-    url: `/users/${userId}/vip`,
-    method: 'post',
-    data
-  })
-}
-
-export function updateVip(userId, data) {
-  return request({
-    url: `/users/${userId}/vip`,
-    method: 'put',
-    data
-  })
-}
-
-export function deleteVip(userId) {
-  return request({
-    url: `/users/${userId}/vip`,
-    method: 'delete'
-  })
-}
+// 已移除管理端VIP相关API：getVip、createVip、updateVip、deleteVip
 
 // ===== 黑名单管理相关 =====
 export function getBlacklist(userId) {

@@ -149,11 +149,10 @@ export default {
           const entryTime = feeResp?.entry_time ? new Date(feeResp.entry_time) : new Date()
           const durationHours = Number(feeResp?.duration_hours ?? 0)
           const fee = Number(feeResp?.fee ?? 0).toFixed(2)
-          const isVip = Boolean(feeResp?.is_vip)
           const title = '停车费用估算'
           const message = `入场时间：${entryTime.toLocaleString()}` +
                           `\n当前时长：${durationHours.toFixed(2)} 小时` +
-                          `\n预计费用：¥${fee}` + (isVip ? '（已应用VIP折扣）' : '')
+                          `\n预计费用：¥${fee}`
           await ElMessageBox.alert(message, title, { confirmButtonText: '继续导航' })
         } catch (_) {
           try {
@@ -161,13 +160,12 @@ export default {
             const entryTime = entryTimeStr ? new Date(entryTimeStr) : new Date()
             const now = new Date()
             const durationHours = Math.max((now - entryTime) / 3600000, 0)
-            const isVip = Number(this.$store?.state?.user?.vip_level || 0) > 0
-            const feeResp2 = await calcParkingFee(durationHours, isVip)
+            const feeResp2 = await calcParkingFee(durationHours)
             const fee2 = Number(feeResp2?.fee || 0).toFixed(2)
             const title2 = '停车费用估算'
             const message2 = `入场时间：${entryTime.toLocaleString()}` +
                              `\n当前时长：${durationHours.toFixed(2)} 小时` +
-                             `\n预计费用：¥${fee2}` + (isVip ? '（已应用VIP折扣）' : '')
+                             `\n预计费用：¥${fee2}`
             await ElMessageBox.alert(message2, title2, { confirmButtonText: '继续导航' })
           } catch (e) {
             console.warn('费用计算失败：', e)

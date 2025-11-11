@@ -13,7 +13,7 @@
         <span v-else-if="cell.type === 'exit'" class="cell-text">出口</span>
         <span v-else-if="cell.type === 'parking' && cell.isUnderMaintenance" class="cell-text">🛠️</span>
         <span v-else-if="cell.type === 'parking' && cell.isReserved" class="cell-text">🔒</span>
-        <span v-else-if="cell.type === 'parking' && cell.spaceType === 'vip'" class="cell-text">⭐</span>
+        
         <span v-else-if="cell.type === 'parking' && cell.isOccupied" class="cell-text">🚗</span>
         <span v-else-if="cell.type === 'parking'" class="cell-text">P</span>
       </div>
@@ -101,7 +101,7 @@ export default {
     const getCellClasses = (cell) => {
       const classes = ['grid-cell', cell.type]
       if (cell.isOccupied) classes.push('occupied')
-      if (cell.spaceType === 'vip') classes.push('vip')
+      
       if (cell.isReserved) classes.push('reserved')
       if (cell.isUnderMaintenance) classes.push('maintenance')
       if (props.highlightCoord && props.highlightCoord.row === cell.row && props.highlightCoord.col === cell.col) {
@@ -193,9 +193,6 @@ export default {
   background-color: #fab6b6;
 }
 
-.parking.vip {
-  background-color: #ffc700;
-}
 
 .parking.reserved {
   background-color: #e6a23c;

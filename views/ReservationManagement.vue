@@ -589,7 +589,7 @@ const onParkingLotChange = async (parkingLotId) => {
     availableSpaces.value = [
       { number: 'A001', type: '标准车位' },
       { number: 'A002', type: '标准车位' },
-      { number: 'B001', type: 'VIP车位' }
+      { number: 'B001', type: '标准车位' }
     ]
   } catch (error) {
     ElMessage.error('加载车位列表失败')

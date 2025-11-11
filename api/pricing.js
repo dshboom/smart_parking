@@ -8,26 +8,17 @@ export function getPricingConfig() {
   })
 }
 
-// 计算VIP方案价格（可用于前端展示或校验）
-export function calcVipPrice(plan) {
-  return request({
-    url: '/pricing/calc/vip-price',
-    method: 'get',
-    params: { plan }
-  })
-}
-
-// 计算停车费用（可用于展示VIP折扣说明）
-export function calcParkingFee(durationHours, isVip = false) {
+// 计算停车费用
+export function calcParkingFee(durationHours) {
   return request({
     url: '/pricing/calc/parking-fee',
     method: 'get',
-    params: { duration_hours: durationHours, is_vip: isVip }
+    params: { duration_hours: durationHours }
   })
 }
 
-// 高级计费：支持分时段、每日封顶、VIP每日免费时长等
-// params: { entry_time?: ISOString, exit_time?: ISOString, duration_hours?: number, is_vip?: boolean }
+// 高级计费：支持分时段、每日封顶等
+// params: { entry_time?: ISOString, exit_time?: ISOString, duration_hours?: number }
 export function calcParkingFeeAdvanced(params) {
   return request({
     url: '/pricing/calc/parking-fee-advanced',
