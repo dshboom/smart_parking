@@ -31,13 +31,6 @@
               </template>
             </el-menu-item>
             
-            <el-menu-item index="/admin/vehicles" class="modern-menu-item">
-              <el-icon><Van /></el-icon>
-              <template #title>
-                <span class="menu-title">车辆管理</span>
-                <span class="menu-subtitle">Vehicle</span>
-              </template>
-            </el-menu-item>
             
             <el-menu-item index="/admin/users" class="modern-menu-item">
               <el-icon><User /></el-icon>
@@ -159,7 +152,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Monitor,
-  Van,
   User,
   Document,
   Expand,
@@ -178,7 +170,6 @@ export default {
   name: 'AdminLayout',
   components: {
     Monitor,
-    Van,
     User,
     Document,
     Expand,
@@ -203,7 +194,6 @@ export default {
     const currentPageTitle = computed(() => {
       const titles = {
         '/admin/dashboard': '仪表盘',
-        '/admin/vehicles': '车辆管理',
         '/admin/users': '用户管理',
         '/admin/records': '进出记录',
         '/admin/parking': '停车场管理',

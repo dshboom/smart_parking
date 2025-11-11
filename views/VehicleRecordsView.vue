@@ -314,6 +314,9 @@ export default {
     })
 
     const list = ref([])
+    // 保存 WebSocket 订阅的卸载函数，避免清空其他组件的处理器
+    let offVehicleEntry = null
+    let offVehicleExit = null
 
     // 统计数据
     const stats = reactive({
@@ -511,12 +514,12 @@ export default {
       if (!wsManager.isConnected) {
         wsManager.connect()
       }
-      wsManager.subscribe('vehicle_entry', (data) => {
+      offVehicleEntry = subscribeToVehicleEntry((data) => {
         console.log('Vehicle entry detected:', data)
         ElMessage.info(`车辆 ${data.license_plate} 已进入停车场`)
         getList() // 刷新列表
       })
-      wsManager.subscribe('vehicle_exit', (data) => {
+      offVehicleExit = subscribeToVehicleExit((data) => {
         console.log('Vehicle exit detected:', data)
         ElMessage.info(`车辆 ${data.license_plate} 已离开停车场`)
         getList() // 刷新列表
@@ -524,9 +527,13 @@ export default {
     })
 
     onUnmounted(() => {
-       // 取消订阅并断开 WebSocket
-       wsManager.unsubscribe('vehicle_entry')
-       wsManager.unsubscribe('vehicle_exit')
+       // 取消订阅（仅移除当前组件的处理器，避免影响其他订阅者）
+       try {
+         if (typeof offVehicleEntry === 'function') offVehicleEntry()
+         if (typeof offVehicleExit === 'function') offVehicleExit()
+       } catch (err) {
+         console.error('取消车辆事件订阅失败:', err)
+       }
        // 保持连接供其他管理页面使用，避免路由切换后需要重新连接
     })
 

@@ -3,7 +3,6 @@ import MobileLayout from '@/views/mobile/MobileLayout.vue'
 import MobileEntryView from '@/views/mobile/MobileEntryView.vue'
 import MobileFindView from '@/views/mobile/MobileFindView.vue'
 import MobileProfileView from '@/views/mobile/MobileProfileView.vue'
-import MobileMyVehiclesView from '@/views/mobile/MobileMyVehiclesView.vue'
 import MobileLoginView from '@/views/mobile/MobileLoginView.vue'
 import MobileRegisterView from '@/views/mobile/MobileRegisterView.vue'
 import MobileProfileEditView from '@/views/mobile/MobileProfileEditView.vue'
@@ -45,12 +44,7 @@ const mobileRoutes = [
         component: MobileProfileView,
         meta: { title: '用户中心', requiresAuth: true }
       },
-      {
-        path: 'vehicles',
-        name: 'MobileMyVehicles',
-        component: MobileMyVehiclesView,
-        meta: { title: '我的车辆', requiresAuth: true }
-      }
+      // Removed empty route object
     ]
   },
   {

@@ -138,3 +138,29 @@ export function deleteMyReservation(id) {
     method: 'delete'
   })
 }
+
+// 延长我的预约时间（需属于当前用户）
+export function extendMyReservation(id, extendHours) {
+  return request({
+    url: `/reservations/${id}/extend`,
+    method: 'put',
+    data: { extend_hours: extendHours }
+  })
+}
+
+// 重新预约（基于已完成/已取消的预约，同一车位）
+export function rebookReservation(id, newStartTime, newEndTime) {
+  return request({
+    url: `/reservations/${id}/rebook`,
+    method: 'post',
+    data: { new_start_time: newStartTime, new_end_time: newEndTime }
+  })
+}
+
+// 获取预约导航信息（当前用户的预约）
+export function getReservationNavigation(id) {
+  return request({
+    url: `/reservations/${id}/navigate`,
+    method: 'get'
+  })
+}

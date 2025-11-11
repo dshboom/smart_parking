@@ -165,13 +165,15 @@ export default {
             this.$message.success('🎉 登录成功！')
             try {
               await this.$store.dispatch('user/getInfo')
+              // 获取用户信息后再检查角色
+              const role = this.$store.state.user.status
+              if (role === 'admin') {
+                this.$router.push('/admin/dashboard')
+              } else {
+                this.$router.push('/mobile/entry')
+              }
             } catch (e) {
-              // ignore info errors, proceed as regular user
-            }
-            const role = this.$store.state.user.status
-            if (role === 'admin') {
-              this.$router.push('/admin/dashboard')
-            } else {
+              // 如果获取用户信息失败，默认跳转到用户端
               this.$router.push('/mobile/entry')
             }
           }).catch(error => {

@@ -65,12 +65,18 @@ export function updateParkingSpace(id, data) {
 }
 
 // 占用停车位
-export function occupyParkingSpace(spaceId, vehicleId) {
-  return request({
+export function occupyParkingSpace(spaceId, payloadOrVehicleId) {
+  const config = {
     url: `/api/parking/spaces/${spaceId}/occupy`,
-    method: 'post',
-    params: { vehicle_id: vehicleId }
-  })
+    method: 'post'
+  }
+  if (typeof payloadOrVehicleId === 'number') {
+    config.params = { vehicle_id: payloadOrVehicleId }
+  } else if (payloadOrVehicleId && typeof payloadOrVehicleId === 'object') {
+    // 支持通过请求体传入 { license_plate } 或 { vehicle_id }
+    config.data = payloadOrVehicleId
+  }
+  return request(config)
 }
 
 // 释放停车位
@@ -213,15 +219,16 @@ export function startMyParking(data) {
 // 结束停车（用户手动记录离开）
 export function endMyParking(recordId) {
   return request({
-    url: `/api/parking/my/end/${recordId}`,
-    method: 'post'
+    url: '/api/parking/my/end',
+    method: 'post',
+    params: { record_id: recordId }
   })
 }
 
 // 获取停车费用计算
 export function calculateMyParkingFee(recordId) {
   return request({
-    url: `/api/parking/my/records/${recordId}/fee`,
+    url: `/api/parking/my/fee/${recordId}`,
     method: 'get'
   })
 }

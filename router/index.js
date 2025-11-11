@@ -38,15 +38,7 @@ export const constantRoutes = [
           title: '仪表盘'
         }
       },
-      {
-        path: 'vehicles',
-        name: 'admin-vehicles',
-        component: () => import('../views/VehicleManagementView.vue'),
-        meta: { 
-          permissions: ['vehicle:list'],
-          title: '车辆管理'
-        }
-      },
+      // Removed empty route object
       {
         path: 'users',
         name: 'admin-users',

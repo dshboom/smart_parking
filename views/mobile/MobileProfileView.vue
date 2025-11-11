@@ -34,15 +34,6 @@
       <div class="menu-section">
         <h4>我的服务</h4>
         <div class="menu-items">
-          <div class="menu-item" @click="goToMyVehicles">
-            <div class="menu-icon">
-              <el-icon><Position /></el-icon>
-            </div>
-            <div class="menu-content">
-              <span>我的车辆</span>
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
           <div class="menu-item" @click="goToReservations">
             <div class="menu-icon">
               <el-icon><Calendar /></el-icon>
@@ -98,14 +89,14 @@
 
 <script>
 import { 
-  User, ArrowRight, Position, Calendar,
+  User, ArrowRight, Calendar,
   Wallet, QuestionFilled, SwitchButton 
 } from '@element-plus/icons-vue'
 
 export default {
   name: 'MobileProfileView',
   components: {
-    User, ArrowRight, Position, Calendar,
+    User, ArrowRight, Calendar,
     Wallet, QuestionFilled, SwitchButton
   },
   data() {
@@ -136,11 +127,7 @@ export default {
         // VIP信息已整合进 /users/me 的响应（vip_level），无会员时为 null/0
       } catch (error) {
         console.error('加载用户信息失败:', error)
-        // 未登录或Token失效，跳转登录页
-        if (error?.response?.status === 401) {
-          this.$message.error('登录已过期，请重新登录')
-          this.$router.push('/login')
-        }
+        // 401 统一由 axios 拦截器处理（清理令牌、提示并回跳登录），此处不重复提示
       }
     },
     
@@ -150,6 +137,7 @@ export default {
         this.userStats = { ...this.userStats, ...stats }
       } catch (error) {
         console.error('加载用户统计失败:', error)
+        // 401 统一由 axios 拦截器处理（清理令牌、提示并回跳登录），此处不重复提示
       }
     },
     
@@ -161,10 +149,6 @@ export default {
         4: '钻石会员'
       }
       return levels[level] || '普通用户'
-    },
-    
-    goToMyVehicles() {
-      this.$router.push('/mobile/vehicles')
     },
     
     goToReservations() {

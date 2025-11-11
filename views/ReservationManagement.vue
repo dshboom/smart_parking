@@ -332,6 +332,8 @@ const showAddDialog = ref(false)
 const showDetailDialog = ref(false)
 const selectedReservation = ref(null)
 const selectedIds = ref([])
+// 取消订阅句柄
+let offReservationUpdates = null
 
 // 统计数据
 const stats = reactive({
@@ -714,7 +716,7 @@ const handleReservationUpdate = (data) => {
 // 初始化WebSocket连接
 const initWebSocketConnection = () => {
   // 订阅预约状态更新
-  subscribeToReservationUpdates((data) => {
+  offReservationUpdates = subscribeToReservationUpdates((data) => {
     handleReservationUpdate(data)
   })
   
@@ -735,9 +737,9 @@ onMounted(() => {
 
 // 清理工作
 onUnmounted(() => {
-  // 取消WebSocket订阅
-  if (typeof window !== 'undefined') {
-    window.wsManager?.unsubscribe('reservation_update')
+  // 取消WebSocket订阅（对 space_reserved / space_unreserved 生效）
+  if (typeof offReservationUpdates === 'function') {
+    offReservationUpdates()
   }
 })
 </script>

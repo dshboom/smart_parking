@@ -47,8 +47,8 @@
 
 <script>
 import { getMyCurrentParking } from '@/api/parking'
-import { calcParkingFeeAdvanced } from '@/api/pricing'
-import { getMyVip } from '@/api/users'
+import { calcParkingFeeAdvanced, calcParkingFee } from '@/api/pricing'
+import { getMyVip } from '@/api/user'
 import { getMyBalance, settleParkingFee } from '@/api/payments'
 
 export default {
@@ -85,7 +85,9 @@ export default {
           getMyVip().catch(() => ({ is_active: false })),
           getMyBalance().catch(() => ({ balance: 0 }))
         ])
-        this.current = current || current?.data || null
+        // 兼容后端返回结构：{ has_current_parking, current_parking }
+        const curObj = current?.current_parking || current?.data?.current_parking || current || current?.data || null
+        this.current = curObj
         this.vipActive = Boolean(vip?.is_active || vip?.data?.is_active)
         const bal = Number(balance?.balance ?? balance?.data?.balance ?? 0)
         this.balanceText = `余额：¥${bal.toFixed(2)}`
@@ -110,8 +112,16 @@ export default {
         this.previewFee = fee.toFixed(2)
       } catch (e) {
         console.warn('高级计费失败，回退基础计费：', e)
-        // 回退：仅展示已停时长，不计算费用
-        this.previewFee = '0.00'
+        try {
+          const entry = new Date(this.current.entry_time)
+          const now = new Date()
+          const hours = Math.max((now - entry) / 3600000, 0)
+          const basic = await calcParkingFee(hours, this.vipActive)
+          const fee2 = Number(basic?.fee ?? basic?.data?.fee ?? 0)
+          this.previewFee = fee2.toFixed(2)
+        } catch (_) {
+          this.previewFee = '0.00'
+        }
       }
     },
     formatTime(ts) {

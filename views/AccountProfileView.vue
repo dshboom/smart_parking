@@ -18,43 +18,13 @@
       </el-form>
     </el-card>
 
-    <el-card class="vehicles-card" shadow="hover" style="margin-top: 20px;">
-      <template #header>
-        <div class="clearfix"><span>我的车辆</span></div>
-      </template>
-
-      <div class="add-vehicle">
-        <el-input v-model="newVehicle.license_plate" placeholder="车牌号" style="width: 200px; margin-right: 10px;" />
-        <el-input v-model="newVehicle.brand" placeholder="品牌" style="width: 160px; margin-right: 10px;" />
-        <el-input v-model="newVehicle.model" placeholder="型号" style="width: 160px; margin-right: 10px;" />
-        <el-input v-model="newVehicle.color" placeholder="颜色" style="width: 160px; margin-right: 10px;" />
-        <el-button type="primary" @click="addVehicle" v-permission="'user:vehicle:add'">添加</el-button>
-      </div>
-
-      <el-table :data="vehicles" style="width: 100%; margin-top: 16px;" v-loading="loading.vehicles">
-        <el-table-column prop="license_plate" label="车牌号" width="160" />
-        <el-table-column prop="brand" label="品牌" width="160" />
-        <el-table-column prop="model" label="型号" width="160" />
-        <el-table-column prop="color" label="颜色" width="160" />
-        <el-table-column label="创建时间">
-          <template #default="scope">
-            {{ formatDate(scope.row.created_at) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="140">
-          <template #default="scope">
-            <el-button type="danger" size="mini" @click="removeVehicle(scope.row.license_plate)" v-permission="'user:vehicle:delete'">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
   </div>
   </template>
 
 <script>
 import { mapState } from 'vuex'
 import { ElMessage } from 'element-plus'
-import { getInfo, getMyVehicles, addMyVehicle, removeMyVehicle } from '@/api/user'
+import { getInfo } from '@/api/user'
 
 export default {
   name: 'AccountProfileView',
@@ -68,16 +38,8 @@ export default {
         username: '',
         phone: ''
       },
-      newVehicle: {
-        license_plate: '',
-        brand: '',
-        model: '',
-        color: ''
-      },
-      vehicles: [],
       loading: {
-        profile: false,
-        vehicles: false
+        profile: false
       }
     }
   },
@@ -88,7 +50,6 @@ export default {
   },
   created() {
     this.loadProfile()
-    this.loadVehicles()
   },
   methods: {
     async loadProfile() {
@@ -119,39 +80,6 @@ export default {
     resetProfile() {
       this.profile = { ...this.originalProfile }
     },
-    async loadVehicles() {
-      this.loading.vehicles = true
-      try {
-        this.vehicles = await getMyVehicles()
-      } catch (e) {
-        ElMessage.error('加载车辆失败')
-      } finally {
-        this.loading.vehicles = false
-      }
-    },
-    async addVehicle() {
-      if (!this.newVehicle.license_plate) {
-        ElMessage.warning('请输入车牌号')
-        return
-      }
-      try {
-        await addMyVehicle({ ...this.newVehicle })
-        ElMessage.success('添加成功')
-        this.newVehicle = { license_plate: '', brand: '', model: '', color: '' }
-        await this.loadVehicles()
-      } catch (e) {
-        ElMessage.error((e && e.message) || '添加失败')
-      }
-    },
-    async removeVehicle(licensePlate) {
-      try {
-        await removeMyVehicle(licensePlate)
-        ElMessage.success('删除成功')
-        await this.loadVehicles()
-      } catch (e) {
-        ElMessage.error('删除失败')
-      }
-    },
     formatDate(ts) {
       if (!ts) return '-'
       const d = new Date(ts)
@@ -170,12 +98,8 @@ export default {
 .account-profile {
   padding: 20px;
 }
-.profile-card, .vehicles-card {
+.profile-card {
   max-width: 980px;
   margin: 0 auto;
-}
-.add-vehicle {
-  display: flex;
-  align-items: center;
 }
 </style>

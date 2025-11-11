@@ -184,44 +184,7 @@
           :header-cell-style="tableHeaderStyle"
           :row-class-name="tableRowClassName"
         >
-          <el-table-column type="expand">
-            <template #default="{ row }">
-              <div class="expand-panel">
-                <div class="expand-title">用户车辆</div>
-                <div class="expand-tools">
-                  <el-input
-                    v-model="rowVehicleInput[row.id]"
-                    placeholder="输入车牌进行绑定"
-                    size="small"
-                    class="modern-input"
-                    style="max-width: 240px;"
-                  />
-                  <el-button size="small" type="primary" @click="addRowVehicle(row.id)">绑定</el-button>
-                </div>
-                <div class="expand-content">
-                  <template v-if="rowVehiclesLoading[row.id]">
-                    <el-skeleton :rows="2" animated style="padding: 8px 0" />
-                  </template>
-                  <template v-else>
-                    <template v-if="rowVehicles[row.id] && rowVehicles[row.id].length">
-                      <div class="vehicle-tags">
-                        <el-tooltip v-for="v in rowVehicles[row.id]" :key="v.license_plate" :content="'点击叉号解除绑定'" placement="top">
-                          <el-tag
-                            class="modern-tag"
-                            type="info"
-                            closable
-                            @close="removeRowVehicle(row.id, v.license_plate)"
-                            style="margin: 4px;"
-                          >{{ v.license_plate }}</el-tag>
-                        </el-tooltip>
-                      </div>
-                    </template>
-                    <el-empty v-else description="暂无绑定车辆" />
-                  </template>
-                </div>
-              </div>
-            </template>
-          </el-table-column>
+          
           <el-table-column type="selection" width="50" align="center" />
           <el-table-column 
             prop="id" 
@@ -324,10 +287,6 @@
                         <el-icon><Key /></el-icon>
                         重置密码
                       </el-dropdown-item>
-                      <el-dropdown-item command="vehicles">
-                        <el-icon><List /></el-icon>
-                        车辆管理
-                      </el-dropdown-item>
                       <el-dropdown-item command="vip">
                         <el-icon><Star /></el-icon>
                         VIP 管理
@@ -404,37 +363,6 @@
       </template>
     </el-dialog>
 
-    <!-- 车辆管理对话框 -->
-    <el-dialog v-model="vehiclesDialogVisible" title="车辆管理" width="640px" class="modern-dialog">
-      <div v-if="currentUser" class="dialog-subtitle">当前用户：{{ currentUser.username }}（ID: {{ currentUser.id }}）</div>
-      <div class="vehicle-bind">
-        <el-input v-model="vehicleForm.license_plate" placeholder="请输入车牌号并点击绑定" class="modern-input" style="max-width: 320px;" />
-        <el-button type="primary" @click="addVehicle" style="margin-left: 8px;">绑定车辆</el-button>
-      </div>
-      <div class="vehicle-list" style="margin-top: 12px;">
-        <template v-if="vehicles && vehicles.length">
-          <div class="vehicle-tags">
-            <el-tag
-              v-for="v in vehicles"
-              :key="v.license_plate"
-              type="info"
-              closable
-              @close="removeVehicle(v.license_plate)"
-              class="modern-tag"
-              style="margin: 4px;"
-            >
-              {{ v.license_plate }}
-            </el-tag>
-          </div>
-        </template>
-        <el-empty v-else description="暂无绑定车辆" />
-      </div>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="vehiclesDialogVisible = false">关 闭</el-button>
-        </span>
-      </template>
-    </el-dialog>
 
     <!-- VIP 管理对话框 -->
     <el-dialog v-model="vipDialogVisible" title="VIP 管理" width="560px" class="modern-dialog">

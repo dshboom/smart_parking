@@ -454,6 +454,8 @@ export default {
         const updated = await parkingApi.updateParkingSpace(selectedSpot.value.id, payload)
         // 更新本地缓存
         coordToSpace.value.set(`${updated.row},${updated.col}`, updated)
+        // 触发响应式更新
+        coordToSpace.value = new Map(coordToSpace.value)
         selectedSpot.value = updated
         ElMessage.success('车位属性已保存')
       } catch (error) {
@@ -546,6 +548,8 @@ export default {
           const coord = spaceIdToCoord.value.get(message.space_id)
           if (coord) {
             occupiedSpots.value.add(`${coord.row},${coord.col}`)
+            // 触发响应式更新
+            occupiedSpots.value = new Set(occupiedSpots.value)
             stats.occupied_spaces++
             stats.available_spaces--
           }
@@ -553,8 +557,34 @@ export default {
           const coord = spaceIdToCoord.value.get(message.space_id)
           if (coord) {
             occupiedSpots.value.delete(`${coord.row},${coord.col}`)
+            // 触发响应式更新
+            occupiedSpots.value = new Set(occupiedSpots.value)
             stats.occupied_spaces--
             stats.available_spaces++
+          }
+        } else if (message.event === 'space_reserved') {
+          const coord = spaceIdToCoord.value.get(message.space_id)
+          if (coord) {
+            const key = `${coord.row},${coord.col}`
+            const space = coordToSpace.value.get(key)
+            if (space) {
+              const updated = { ...space, is_reserved: true }
+              coordToSpace.value.set(key, updated)
+              // 触发响应式更新
+              coordToSpace.value = new Map(coordToSpace.value)
+            }
+          }
+        } else if (message.event === 'space_unreserved') {
+          const coord = spaceIdToCoord.value.get(message.space_id)
+          if (coord) {
+            const key = `${coord.row},${coord.col}`
+            const space = coordToSpace.value.get(key)
+            if (space) {
+              const updated = { ...space, is_reserved: false }
+              coordToSpace.value.set(key, updated)
+              // 触发响应式更新
+              coordToSpace.value = new Map(coordToSpace.value)
+            }
           }
         }
       } catch (error) {

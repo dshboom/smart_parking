@@ -188,6 +188,8 @@ export default {
     const editingLot = ref(null)
     const activeTab = ref('visualization')
     const selectedSpace = ref(null)
+    // 保存 WebSocket 订阅的卸载函数，防止内存泄漏
+    let offParkingUpdates = null
 
     // Form
     const lotFormRef = ref(null)
@@ -368,7 +370,7 @@ export default {
     // 初始化WebSocket连接
     const initWebSocketConnection = () => {
       // 订阅停车场状态更新
-      subscribeToParkingUpdates((data) => {
+      offParkingUpdates = subscribeToParkingUpdates((data) => {
         handleParkingUpdate(data)
       })
       
@@ -404,8 +406,12 @@ export default {
     // 清理工作
     onUnmounted(() => {
       // 取消WebSocket订阅
-      if (typeof window !== 'undefined') {
-        window.wsManager?.unsubscribe('parking_update')
+      try {
+        if (typeof offParkingUpdates === 'function') {
+          offParkingUpdates()
+        }
+      } catch (err) {
+        console.error('取消停车更新订阅失败:', err)
       }
     })
 

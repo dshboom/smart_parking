@@ -334,7 +334,16 @@ export const subscribeToVehicleExit = (handler) => {
 };
 
 export const subscribeToReservationUpdates = (handler) => {
-  return wsManager.subscribe('reservation_update', handler);
+  // 兼容后端当前广播：space_reserved / space_unreserved
+  const offReserved = wsManager.subscribe('space_reserved', (payload) => handler({ event: 'space_reserved', ...payload }))
+  const offUnreserved = wsManager.subscribe('space_unreserved', (payload) => handler({ event: 'space_unreserved', ...payload }))
+  // 若后端未来支持 reservation_update，可在此追加兼容订阅
+  // const offReservationUpdate = wsManager.subscribe('reservation_update', handler)
+  return () => {
+    if (typeof offReserved === 'function') offReserved()
+    if (typeof offUnreserved === 'function') offUnreserved()
+    // if (typeof offReservationUpdate === 'function') offReservationUpdate()
+  }
 };
 
 export const subscribeToPaymentUpdates = (handler) => {

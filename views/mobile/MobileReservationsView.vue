@@ -262,18 +262,18 @@
             </el-select>
           </el-form-item>
 
-          <el-form-item label="车位" prop="spaceNumber">
+          <el-form-item label="车位" prop="parkingSpaceId">
             <el-select 
-              v-model="newReservation.spaceNumber" 
+              v-model="newReservation.parkingSpaceId" 
               placeholder="请选择车位"
               style="width: 100%"
               :disabled="!newReservation.parkingLotId"
             >
               <el-option
                 v-for="space in availableSpaces"
-                :key="space.number"
-                :label="`${space.number}号车位 (${space.type})`"
-                :value="space.number"
+                :key="space.id"
+                :label="`${space.position || space.space_number || ('#' + space.id)}号车位`"
+                :value="space.id"
               />
             </el-select>
           </el-form-item>
@@ -341,14 +341,29 @@
 <script>
 import {
   ArrowLeft, Plus, Clock, Calendar, Timer, Location,
-  Position, Refresh, Close, Check, Warning, InfoFilled
+  Position, Refresh, Close, Check, Warning, InfoFilled,
+  View, Money
 } from '@element-plus/icons-vue'
+
+import {
+  getMyReservations,
+  createMyReservation,
+  cancelMyReservation,
+  extendMyReservation,
+  rebookReservation,
+  getReservationNavigation,
+  getMyReservationDetail
+} from '@/api/reservations'
+
+import { getParkingLots, getParkingSpaces } from '@/api/parking'
+import { getMyVehicles } from '@/api/user'
 
 export default {
   name: 'MobileReservationsView',
   components: {
     ArrowLeft, Plus, Clock, Calendar, Timer, Location,
-    Position, Refresh, Close, Check, Warning, InfoFilled
+    Position, Refresh, Close, Check, Warning, InfoFilled,
+    View, Money
   },
   data() {
     return {
@@ -357,7 +372,7 @@ export default {
       submitting: false,
       newReservation: {
         parkingLotId: '',
-        spaceNumber: '',
+        parkingSpaceId: '',
         date: '',
         timeSlot: '',
         vehicleId: '',
@@ -367,7 +382,7 @@ export default {
         parkingLotId: [
           { required: true, message: '请选择停车场', trigger: 'change' }
         ],
-        spaceNumber: [
+        parkingSpaceId: [
           { required: true, message: '请选择车位', trigger: 'change' }
         ],
         date: [
@@ -376,75 +391,53 @@ export default {
         timeSlot: [
           { required: true, message: '请选择预约时段', trigger: 'change' }
         ],
-        vehicleId: [
-          { required: true, message: '请选择车辆', trigger: 'change' }
-        ]
+        // 车辆可选，不强制
       },
-      parkingLots: [
-        { id: 1, name: '万达广场停车场' },
-        { id: 2, name: '市政府停车场' },
-        { id: 3, name: '中心医院停车场' }
-      ],
+      parkingLots: [],
       availableSpaces: [],
       userVehicles: [],
-      activeReservations: [
-        {
-          id: 1,
-          parkingLotName: '万达广场停车场',
-          spaceNumber: 'A001',
-          startTime: '2024-01-15T14:00:00',
-          endTime: '2024-01-15T16:00:00',
-          location: 'A区地面层',
-          status: 'active'
-        }
-      ],
-      completedReservations: [
-        {
-          id: 2,
-          parkingLotName: '市政府停车场',
-          spaceNumber: 'B023',
-          startTime: '2024-01-14T09:00:00',
-          endTime: '2024-01-14T11:00:00',
-          fee: 16.00,
-          status: 'completed'
-        },
-        {
-          id: 3,
-          parkingLotName: '中心医院停车场',
-          spaceNumber: 'C156',
-          startTime: '2024-01-13T15:30:00',
-          endTime: '2024-01-13T17:30:00',
-          fee: 12.50,
-          status: 'completed'
-        }
-      ],
-      cancelledReservations: [
-        {
-          id: 4,
-          parkingLotName: '万达广场停车场',
-          spaceNumber: 'A088',
-          startTime: '2024-01-12T13:00:00',
-          cancelTime: '2024-01-12T12:30:00',
-          cancelReason: '临时有事，无法前往',
-          status: 'cancelled'
-        }
-      ]
+      activeReservations: [],
+      completedReservations: [],
+      cancelledReservations: []
     }
   },
   mounted() {
-    this.loadReservations()
-    this.loadUserVehicles()
+    this.initData()
   },
   methods: {
+    async initData() {
+      await Promise.all([
+        this.loadParkingLots(),
+        this.loadUserVehicles(),
+        this.loadReservations()
+      ])
+    },
     goBack() {
       this.$router.back()
     },
 
     async loadReservations() {
       try {
-        // 模拟加载预约数据
-        // const response = await this.$store.dispatch('reservation/getUserReservations')
-        // this.reservations = response.data
+        const resp = await getMyReservations({ limit: 200 })
+        const list = (resp && resp.reservations) || []
+        const mapped = list.map(r => ({
+          id: r.id,
+          parkingLotName: r.parkingSpace?.lotName || '未知停车场',
+          spaceNumber: r.parkingSpace?.position || '',
+          location: r.parkingSpace?.lotAddress || '',
+          startTime: r.startTime,
+          endTime: r.endTime,
+          status: r.status,
+          // 补充展示用字段
+          fee: 0,
+          cancelTime: r.updatedAt,
+          canCancel: r.canCancel,
+          canExtend: r.canExtend,
+          parkingSpaceId: r.parkingSpace?.id
+        }))
+        this.activeReservations = mapped.filter(x => x.status === 'active')
+        this.completedReservations = mapped.filter(x => x.status === 'completed')
+        this.cancelledReservations = mapped.filter(x => x.status === 'cancelled')
       } catch (error) {
         console.error('加载预约失败:', error)
         this.$message.error('加载预约失败')
@@ -453,25 +446,39 @@ export default {
 
     async loadUserVehicles() {
       try {
-        // 模拟加载用户车辆
-        this.userVehicles = [
-          { id: 1, plateNumber: '京A12345', brand: '大众' },
-          { id: 2, plateNumber: '京B67890', brand: '丰田' }
-        ]
+        const list = await getMyVehicles()
+        this.userVehicles = (list || []).map(v => ({
+          id: v.id || v.vehicle_id || v.license_plate,
+          plateNumber: v.license_plate,
+          brand: v.brand || '未知'
+        }))
       } catch (error) {
         console.error('加载车辆失败:', error)
       }
     },
 
-    onParkingLotChange() {
-      // 模拟加载可用车位
-      this.availableSpaces = [
-        { number: 'A001', type: '标准车位' },
-        { number: 'A002', type: '标准车位' },
-        { number: 'A003', type: '大型车位' },
-        { number: 'B001', type: '标准车位' },
-        { number: 'B002', type: '标准车位' }
-      ]
+    async loadParkingLots() {
+      try {
+        const lots = await getParkingLots({ limit: 100 })
+        this.parkingLots = lots || []
+      } catch (e) {
+        console.error('加载停车场失败:', e)
+      }
+    },
+
+    async onParkingLotChange() {
+      if (!this.newReservation.parkingLotId) {
+        this.availableSpaces = []
+        return
+      }
+      try {
+        const spacesRes = await getParkingSpaces(this.newReservation.parkingLotId, { is_available: true })
+        const spaces = (spacesRes || []).filter(s => !s.is_reserved && !s.is_occupied && s.is_available)
+        this.availableSpaces = spaces
+      } catch (e) {
+        console.error('加载车位失败:', e)
+        this.availableSpaces = []
+      }
     },
 
     disabledDate(date) {
@@ -505,15 +512,31 @@ export default {
       }
     },
 
-    navigateToParking() {
-      // 模拟导航功能
-      this.$message.info(`正在导航到 ${this.activeReservations[0].parkingLotName} ${this.activeReservations[0].spaceNumber}号车位`)
-      // 实际项目中这里会调用地图导航API
+    async navigateToParking(reservation) {
+      try {
+        const nav = await getReservationNavigation(reservation.id)
+        const pos = nav?.space_position || reservation.spaceNumber
+        this.$message.info(`导航至 ${reservation.parkingLotName} ${pos}`)
+      } catch (e) {
+        this.$message.error('获取导航信息失败')
+      }
     },
 
-    extendReservation() {
-      this.$message.info('延长预约功能开发中...')
-      // 实际项目中这里会打开延长预约的对话框
+    async extendReservation(reservation) {
+      try {
+        const { value } = await this.$prompt('请输入要延长的小时数(1-24)', '延长预约', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputPattern: /^(?:[1-9]|1\d|2[0-4])$/,
+          inputErrorMessage: '请输入1-24的整数'
+        })
+        const hours = Number(value)
+        await extendMyReservation(reservation.id, hours)
+        this.$message.success('预约已延长')
+        await this.loadReservations()
+      } catch (e) {
+        if (e !== 'cancel') this.$message.error('延长预约失败')
+      }
     },
 
     async cancelReservation(reservation) {
@@ -523,23 +546,8 @@ export default {
           cancelButtonText: '取消',
           type: 'warning'
         })
-
-        // 模拟取消预约
-        // await this.$store.dispatch('reservation/cancelReservation', reservation.id)
-        
-        // 从列表中移除
-        const index = this.activeReservations.findIndex(r => r.id === reservation.id)
-        if (index > -1) {
-          const cancelledReservation = {
-            ...reservation,
-            status: 'cancelled',
-            cancelTime: new Date().toISOString(),
-            cancelReason: '用户主动取消'
-          }
-          this.activeReservations.splice(index, 1)
-          this.cancelledReservations.unshift(cancelledReservation)
-        }
-        
+        await cancelMyReservation(reservation.id)
+        await this.loadReservations()
         this.$message.success('预约已取消')
       } catch (error) {
         if (error !== 'cancel') {
@@ -548,22 +556,61 @@ export default {
       }
     },
 
-    viewReservationDetails() {
-      this.$message.info('预约详情功能开发中...')
-      // 实际项目中这里会跳转到详情页面或打开详情对话框
+    async viewReservationDetails(reservation) {
+      try {
+        const detail = await getMyReservationDetail(reservation.id)
+        this.$message.info(`预约详情：${detail?.parkingSpace?.lotName || ''} ${detail?.parkingSpace?.position || ''}`)
+      } catch (e) {
+        this.$message.error('获取预约详情失败')
+      }
     },
 
     rebookReservation(reservation) {
       // 使用原预约信息填充新预约表单
       this.newReservation = {
-        parkingLotId: reservation.parkingLotId,
-        spaceNumber: '',
+        parkingLotId: '',
+        parkingSpaceId: reservation.parkingSpaceId || '',
         date: '',
         timeSlot: '',
         vehicleId: '',
         remark: ''
       }
       this.showAddReservation = true
+    },
+
+    // 提交新增预约
+    async submitReservation() {
+      try {
+        this.submitting = true
+        await this.$refs.reservationFormRef.validate()
+        const { startISO, endISO } = this.computeStartEndISO(this.newReservation.date, this.newReservation.timeSlot)
+        const payload = {
+          parking_space_id: this.newReservation.parkingSpaceId,
+          start_time: startISO,
+          end_time: endISO
+        }
+        await createMyReservation(payload)
+        this.$message.success('预约创建成功')
+        this.showAddReservation = false
+        await this.loadReservations()
+      } catch (e) {
+        if (e !== 'cancel') this.$message.error('预约创建失败')
+      } finally {
+        this.submitting = false
+      }
+    },
+
+    // 工具：将日期+时段转换为 ISO 开始/结束时间
+    computeStartEndISO(dateVal, timeSlot) {
+      const [startStr, endStr] = (timeSlot || '').split('-')
+      const d = new Date(dateVal)
+      const makeISO = (hhmm) => {
+        const [h, m] = hhmm.split(':').map(x => Number(x))
+        const t = new Date(d)
+        t.setHours(h, m, 0, 0)
+        return t.toISOString()
+      }
+      return { startISO: makeISO(startStr), endISO: makeISO(endStr) }
     }
   }
 }
