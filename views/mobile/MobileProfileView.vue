@@ -52,30 +52,12 @@
               <el-icon><ArrowRight /></el-icon>
             </div>
           </div>
-          <div class="menu-item" @click="goToHistory">
-            <div class="menu-icon">
-              <el-icon><Document /></el-icon>
-            </div>
-            <div class="menu-content">
-              <span>停车记录</span>
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
         </div>
       </div>
       
       <div class="menu-section">
         <h4>账户设置</h4>
         <div class="menu-items">
-          <div class="menu-item" @click="goToProfileEdit">
-            <div class="menu-icon">
-              <el-icon><Edit /></el-icon>
-            </div>
-            <div class="menu-content">
-              <span>个人信息</span>
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
           <div class="menu-item" @click="goToPayment">
             <div class="menu-icon">
               <el-icon><Wallet /></el-icon>
@@ -116,15 +98,15 @@
 
 <script>
 import { 
-  User, ArrowRight, Position, Calendar, Document,
-  Edit, Wallet, QuestionFilled, SwitchButton 
+  User, ArrowRight, Position, Calendar,
+  Wallet, QuestionFilled, SwitchButton 
 } from '@element-plus/icons-vue'
 
 export default {
   name: 'MobileProfileView',
   components: {
-    User, ArrowRight, Position, Calendar, Document,
-    Edit, Wallet, QuestionFilled, SwitchButton
+    User, ArrowRight, Position, Calendar,
+    Wallet, QuestionFilled, SwitchButton
   },
   data() {
     return {
@@ -187,14 +169,6 @@ export default {
     
     goToReservations() {
       this.$router.push('/mobile/reservations')
-    },
-    
-    goToHistory() {
-      this.$router.push('/mobile/history')
-    },
-    
-    goToProfileEdit() {
-      this.$router.push('/mobile/profile/edit')
     },
     
     goToPayment() {

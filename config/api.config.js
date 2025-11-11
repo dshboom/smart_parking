@@ -14,7 +14,7 @@ const getApiBaseUrl = () => {
   }
   
   // 默认返回本地地址
-  return `${protocol}//localhost:8000`;
+  return `${protocol}//localhost:8001`;
 };
 
 const getWebSocketUrl = () => {
@@ -32,7 +32,7 @@ const getWebSocketUrl = () => {
   }
   
   // 默认返回本地地址
-  return `${protocol}//localhost:8000/ws`;
+  return `${protocol}//localhost:8001/ws`;
 };
 
 export const API_CONFIG = {

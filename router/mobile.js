@@ -12,6 +12,7 @@ import MobileReservationsView from '@/views/mobile/MobileReservationsView.vue'
 import MobileHistoryView from '@/views/mobile/MobileHistoryView.vue'
 import MobileHelpView from '@/views/mobile/MobileHelpView.vue'
 import MobileVipView from '@/views/mobile/MobileVipView.vue'
+import MobileExitView from '@/views/mobile/MobileExitView.vue'
 
 const mobileRoutes = [
   {
@@ -25,6 +26,12 @@ const mobileRoutes = [
         name: 'MobileEntry',
         component: MobileEntryView,
         meta: { title: '车辆入场', requiresAuth: true }
+      },
+      {
+        path: 'exit',
+        name: 'MobileExit',
+        component: MobileExitView,
+        meta: { title: '出场结算', requiresAuth: true }
       },
       {
         path: 'find',

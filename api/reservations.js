@@ -85,3 +85,56 @@ export function checkReservationConflict(data) {
     data
   })
 }
+
+// ===== 我的预约相关接口 =====
+
+// 获取我的预约列表
+export function getMyReservations(params) {
+  return request({
+    url: '/reservations/my',
+    method: 'get',
+    params
+  })
+}
+
+// 创建我的预约
+export function createMyReservation(data) {
+  return request({
+    url: '/reservations/my',
+    method: 'post',
+    data
+  })
+}
+
+// 获取我的预约详情
+export function getMyReservationDetail(id) {
+  return request({
+    url: `/reservations/my/${id}`,
+    method: 'get'
+  })
+}
+
+// 更新我的预约
+export function updateMyReservation(id, data) {
+  return request({
+    url: `/reservations/my/${id}`,
+    method: 'put',
+    data
+  })
+}
+
+// 取消我的预约
+export function cancelMyReservation(id) {
+  return request({
+    url: `/reservations/my/${id}/cancel`,
+    method: 'post'
+  })
+}
+
+// 删除我的预约
+export function deleteMyReservation(id) {
+  return request({
+    url: `/reservations/my/${id}`,
+    method: 'delete'
+  })
+}

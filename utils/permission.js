@@ -4,6 +4,7 @@
  */
 
 import store from '@/store'
+import { getToken } from '@/utils/auth'
 
 /**
  * 检查用户是否有指定角色
@@ -94,25 +95,45 @@ export const roleDirective = {
  * @param {Object} route - 路由对象
  * @returns {boolean}
  */
-export function checkRoutePermission(route) {
+export function checkRouteAccess(route) {
   // 支持嵌套路由：逐条检查 matched 中的所有记录
   const records = Array.isArray(route.matched) && route.matched.length > 0
     ? route.matched
     : [route]
 
+  const token = getToken()
+
   for (const rec of records) {
     const meta = rec.meta || {}
+    // 统一的 access 配置，兼容旧的 roles/permissions/requiresAuth 写法
+    const access = meta.access || {}
 
-    // 检查角色要求
-    if (meta.roles && !hasRole(meta.roles)) {
+    const roles = access.roles ?? meta.roles
+    const permissions = access.permissions ?? meta.permissions
+    const requireAllRoles = access.requireAllRoles === true
+    const requireAllPermissions = access.requireAllPermissions === true
+    const requiresAuth = (access.requiresAuth ?? meta.requiresAuth) === true
+
+    // 若需要登录或声明了角色/权限而当前未登录，则拒绝访问
+    if ((requiresAuth || roles || permissions) && !token) {
       return false
     }
 
-    // 检查权限标识
-    if (meta.permissions && !hasPermission(meta.permissions)) {
+    // 角色校验（支持全部/任意）
+    if (roles && !hasRole(roles, requireAllRoles)) {
+      return false
+    }
+
+    // 权限校验（支持全部/任意）
+    if (permissions && !hasPermission(permissions, requireAllPermissions)) {
       return false
     }
   }
 
   return true
+}
+
+// 兼容旧接口名称，内部统一走新的访问检查
+export function checkRoutePermission(route) {
+  return checkRouteAccess(route)
 }

@@ -188,7 +188,8 @@ export default {
     OfficeBuilding,
     Bell,
     Setting,
-    SwitchButton
+    SwitchButton,
+    Wallet
   },
   setup() {
     const route = useRoute()

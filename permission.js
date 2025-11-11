@@ -2,18 +2,17 @@ import router from './router'
 import store from './store'
 import { getToken } from '@/utils/auth'
 import { ElMessage } from 'element-plus'
-import { checkRoutePermission } from '@/utils/permission'
+import { checkRouteAccess } from '@/utils/permission'
 
 const whiteList = ['/login', '/register'] // no redirect whitelist
 
 router.beforeEach(async(to, from, next) => {
   // determine whether the user has logged in
   const hasToken = getToken()
-  const isGuest = store.state.user.status === 'guest'
 
   // 智能根路径跳转：管理员跳转到管理后台，普通用户跳转到移动端
   if (to.path === '/') {
-    if (hasToken && !isGuest) {
+    if (hasToken) {
       await store.dispatch('user/getInfo')
       const userRole = store.state.user.status
       if (userRole === 'admin') {
@@ -27,15 +26,15 @@ router.beforeEach(async(to, from, next) => {
     return
   }
 
-  if (hasToken || isGuest) {
+  if (hasToken) {
     if (to.path === '/login') {
       // if is logged in, redirect to the home page
       next({ path: '/' })
     } else {
       const hasGetUserInfo = store.state.user.name
-      if (hasGetUserInfo || isGuest) {
-        // 检查路由权限
-        if (!checkRoutePermission(to)) {
+      if (hasGetUserInfo) {
+        // 统一检查路由访问权限
+        if (!checkRouteAccess(to)) {
           ElMessage.error('您没有权限访问该页面')
           next('/')
           return
@@ -46,7 +45,7 @@ router.beforeEach(async(to, from, next) => {
           // get user info
           await store.dispatch('user/getInfo')
           // 再次检查权限（获取用户信息后）
-          if (!checkRoutePermission(to)) {
+          if (!checkRouteAccess(to)) {
             ElMessage.error('您没有权限访问该页面')
             next('/')
             return

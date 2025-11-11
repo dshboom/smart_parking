@@ -1,5 +1,6 @@
 import { ElMessage } from 'element-plus';
 import { API_CONFIG } from '@/config/api.config';
+import { getToken } from '@/utils/auth';
 
 class WebSocketManager {
   constructor() {
@@ -23,7 +24,17 @@ class WebSocketManager {
       return;
     }
 
-    this.connectionUrl = url || API_CONFIG.wsUrl;
+    // 获取token并添加到WebSocket URL
+    const token = getToken();
+    let wsUrl = url || API_CONFIG.wsUrl;
+    
+    if (token) {
+      // 如果URL已经有参数，添加&，否则添加?
+      const separator = wsUrl.includes('?') ? '&' : '?';
+      wsUrl = `${wsUrl}${separator}token=${token}`;
+    }
+
+    this.connectionUrl = wsUrl;
     this.isConnecting = true;
     
     try {
@@ -106,24 +117,42 @@ class WebSocketManager {
   }
 
   handleMessage(data) {
-    const { type, payload } = data;
-    
-    if (type === 'heartbeat') {
-      return;
+    // 支持两种消息格式：
+    // 1) { type: '...', payload: {...} }
+    // 2) { event: '...', ...otherProps }
+    if (!data || typeof data !== 'object') {
+      this.triggerEvent('message', data)
+      return
     }
 
-    if (this.messageHandlers.has(type)) {
-      const handlers = this.messageHandlers.get(type);
+    let type = data.type
+    let payload = data.payload
+
+    // 兼容后端广播的 { event: 'space_occupied', space_id: 123 } 格式
+    if (!type && data.event) {
+      type = data.event
+      payload = { ...data }
+      delete payload.event
+      delete payload.type
+      delete payload.payload
+    }
+
+    if (type === 'heartbeat') {
+      return
+    }
+
+    if (type && this.messageHandlers.has(type)) {
+      const handlers = this.messageHandlers.get(type)
       handlers.forEach(handler => {
         try {
-          handler(payload);
+          handler(payload)
         } catch (error) {
-          console.error('Error in message handler:', error);
+          console.error('Error in message handler:', error)
         }
-      });
+      })
     }
 
-    this.triggerEvent('message', data);
+    this.triggerEvent('message', data)
   }
 
   handleReconnect() {
@@ -287,7 +316,13 @@ const wsManager = new WebSocketManager();
 
 // 常用的消息类型订阅函数
 export const subscribeToParkingUpdates = (handler) => {
-  return wsManager.subscribe('parking_update', handler);
+  // 同时订阅两种车位事件，并在回调中补充 event 字段
+  const offOccupied = wsManager.subscribe('space_occupied', (payload) => handler({ event: 'space_occupied', ...payload }))
+  const offVacated = wsManager.subscribe('space_vacated', (payload) => handler({ event: 'space_vacated', ...payload }))
+  return () => {
+    if (typeof offOccupied === 'function') offOccupied()
+    if (typeof offVacated === 'function') offVacated()
+  }
 };
 
 export const subscribeToVehicleEntry = (handler) => {

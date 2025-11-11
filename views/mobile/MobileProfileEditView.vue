@@ -16,93 +16,6 @@
           </div>
         </div>
       </div>
-
-      <el-form :model="profileForm" :rules="rules" ref="profileFormRef" class="profile-form">
-        <el-form-item label="用户名" prop="username">
-          <el-input 
-            v-model="profileForm.username" 
-            placeholder="请输入用户名"
-            size="large"
-          >
-            <template #prefix>
-              <el-icon><User /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
-
-        <el-form-item label="手机号" prop="phone">
-          <el-input 
-            v-model="profileForm.phone" 
-            placeholder="请输入手机号"
-            size="large"
-            disabled
-          >
-            <template #prefix>
-              <el-icon><Phone /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
-
-        <el-form-item label="邮箱" prop="email">
-          <el-input 
-            v-model="profileForm.email" 
-            placeholder="请输入邮箱（选填）"
-            size="large"
-          >
-            <template #prefix>
-              <el-icon><Message /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
-
-        <el-form-item label="性别" prop="gender">
-          <el-radio-group v-model="profileForm.gender" size="large">
-            <el-radio label="male">男</el-radio>
-            <el-radio label="female">女</el-radio>
-            <el-radio label="secret">保密</el-radio>
-          </el-radio-group>
-        </el-form-item>
-
-        <el-form-item label="生日" prop="birthday">
-          <el-date-picker
-            v-model="profileForm.birthday"
-            type="date"
-            placeholder="选择生日"
-            size="large"
-            style="width: 100%"
-          />
-        </el-form-item>
-
-        <el-form-item label="个人简介" prop="bio">
-          <el-input
-            v-model="profileForm.bio"
-            type="textarea"
-            :rows="3"
-            placeholder="介绍一下自己吧（选填）"
-            maxlength="200"
-            show-word-limit
-          />
-        </el-form-item>
-      </el-form>
-
-      <div class="form-actions">
-        <el-button 
-          type="primary" 
-          @click="saveProfile" 
-          :loading="saving"
-          size="large"
-          class="save-btn"
-        >
-          保存修改
-        </el-button>
-        <el-button 
-          @click="resetForm" 
-          size="large"
-          class="reset-btn"
-        >
-          重置
-        </el-button>
-      </div>
     </div>
 
     <!-- 头像选择对话框 -->
@@ -118,7 +31,7 @@
           v-for="(avatar, index) in avatarOptions" 
           :key="index"
           class="avatar-option"
-          :class="{ active: profileForm.avatar === avatar }"
+          :class="{ active: tempAvatar === avatar }"
           @click="selectAvatar(avatar)"
         >
           <el-avatar :size="60" :src="avatar" />
@@ -134,42 +47,21 @@
 
 <script>
 import { 
-  ArrowLeft, User, Phone, Message, Camera,
-  Male, Female, Warning
+  ArrowLeft, Camera
 } from '@element-plus/icons-vue'
 
 export default {
   name: 'MobileProfileEditView',
   components: {
-    ArrowLeft, User, Phone, Message, Camera,
-    Male, Female, Warning
+    ArrowLeft, Camera
   },
   data() {
     return {
       defaultAvatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+      userInfo: {},
       profileForm: {
-        username: '',
-        phone: '',
-        email: '',
-        gender: 'secret',
-        birthday: '',
-        bio: '',
         avatar: ''
       },
-      originalForm: {},
-      rules: {
-        username: [
-          { required: true, message: '请输入用户名', trigger: 'blur' },
-          { min: 2, max: 20, message: '用户名长度在 2 到 20 个字符', trigger: 'blur' }
-        ],
-        email: [
-          { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
-        ],
-        bio: [
-          { max: 200, message: '个人简介不能超过200字', trigger: 'blur' }
-        ]
-      },
-      saving: false,
       avatarDialogVisible: false,
       tempAvatar: '',
       avatarOptions: [
@@ -189,16 +81,8 @@ export default {
     async loadUserInfo() {
       try {
         const userInfo = await this.$store.dispatch('user/getInfo')
-        this.profileForm = {
-          username: userInfo.username || '',
-          phone: userInfo.phone || '',
-          email: userInfo.email || '',
-          gender: userInfo.gender || 'secret',
-          birthday: userInfo.birthday || '',
-          bio: userInfo.bio || '',
-          avatar: userInfo.avatar || this.defaultAvatar
-        }
-        this.originalForm = { ...this.profileForm }
+        this.userInfo = userInfo
+        this.profileForm.avatar = userInfo.avatar || this.defaultAvatar
       } catch (error) {
         console.error('加载用户信息失败:', error)
         this.$message.error('加载用户信息失败')
@@ -218,52 +102,17 @@ export default {
       this.tempAvatar = avatar
     },
 
-    confirmAvatar() {
+    async confirmAvatar() {
       this.profileForm.avatar = this.tempAvatar
       this.avatarDialogVisible = false
-    },
-
-    saveProfile() {
-      this.$refs.profileFormRef.validate(async (valid) => {
-        if (!valid) {
-          return
-        }
-
-        this.saving = true
-        try {
-          // 只提交有变化的字段
-          const updateData = {}
-          Object.keys(this.profileForm).forEach(key => {
-            if (this.profileForm[key] !== this.originalForm[key]) {
-              updateData[key] = this.profileForm[key]
-            }
-          })
-
-          if (Object.keys(updateData).length === 0) {
-            this.$message.info('没有需要保存的修改')
-            return
-          }
-
-          await this.$store.dispatch('user/updateProfile', updateData)
-          this.originalForm = { ...this.profileForm }
-          this.$message.success('保存成功')
-          
-          // 延迟返回，让用户看到成功提示
-          setTimeout(() => {
-            this.goBack()
-          }, 1000)
-        } catch (error) {
-          console.error('保存失败:', error)
-          this.$message.error(error.message || '保存失败')
-        } finally {
-          this.saving = false
-        }
-      })
-    },
-
-    resetForm() {
-      this.profileForm = { ...this.originalForm }
-      this.$message.info('已重置为原始数据')
+      try {
+        await this.$store.dispatch('user/updateProfile', { avatar: this.profileForm.avatar })
+        this.userInfo.avatar = this.profileForm.avatar
+        this.$message.success('头像更新成功')
+      } catch (error) {
+        console.error('头像更新失败:', error)
+        this.$message.error('头像更新失败')
+      }
     }
   }
 }

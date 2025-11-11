@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import './utils/passiveWheel' // make global wheel listeners passive on window/document
 import App from './App.vue'
 import router from './router'
 import store from './store'
@@ -7,6 +8,7 @@ import 'element-plus/dist/index.css'
 import './permission' // permission control
 import { wsManager } from '@/utils/websocket'
 import { permissionDirective, roleDirective } from '@/utils/permission'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 const app = createApp(App)
 
@@ -20,6 +22,11 @@ app.config.globalProperties.$websocket = wsManager
 app.use(store)
 app.use(router)
 app.use(ElementPlus)
+
+// 全局注册 Element Plus 图标，确保动态组件与各视图可用
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component)
+}
 
 app.mount('#app')
 

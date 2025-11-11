@@ -164,7 +164,7 @@
             <el-button 
               :loading="loadingMore" 
               @click="loadMore"
-              type="text"
+              type="link"
             >
               加载更多
             </el-button>
@@ -374,22 +374,21 @@
 
 <script>
 import {
-  ArrowLeft, Filter, Van, Clock, Money, ArrowRight,
-  Document, Download, Refresh, SwitchButton, View,
+  ArrowLeft, Filter as FilterIcon, Van, Clock, Money, ArrowRight,
+  Document, Download, Refresh, SwitchButton, View as ViewIcon,
   Top, CircleCheck, CircleClose, Warning, Calendar,
-  Picture
+  Picture as PictureIcon
 } from '@element-plus/icons-vue'
-import { getMyParkingHistory, getMyStats } from '@/api/user'
-import { getParkingLots } from '@/api/parking'
+import { getMyParkingHistory } from '@/api/user'
 import { ElMessage } from 'element-plus'
 
 export default {
   name: 'MobileHistoryView',
   components: {
-    ArrowLeft, Filter, Van, Clock, Money, ArrowRight,
-    Document, Download, Refresh, SwitchButton, View,
+    ArrowLeft, FilterIcon, Van, Clock, Money, ArrowRight,
+    Document, Download, Refresh, SwitchButton, ViewIcon,
     Top, CircleCheck, CircleClose, Warning, Calendar,
-    Picture
+    PictureIcon
   },
   data() {
     return {
@@ -529,17 +528,17 @@ export default {
       this.showDetails = true
     },
 
-    downloadInvoice(record) {
+    downloadInvoice(_record) {
       ElMessage.info('发票下载功能开发中...')
       // 实际项目中这里会调用下载发票的API
     },
 
-    extendParking(record) {
+    extendParking(_record) {
       ElMessage.info('延长停车功能开发中...')
       // 实际项目中这里会打开延长停车的对话框
     },
 
-    prepareExit(record) {
+    prepareExit(_record) {
       this.$confirm('确定要准备出场吗？系统将为您计算停车费用。', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',

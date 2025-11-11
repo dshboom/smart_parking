@@ -40,7 +40,7 @@
       <div class="hot-questions" v-if="!searchQuery">
         <div class="section-header">
           <h3>热门问题</h3>
-          <el-button type="text" @click="refreshHotQuestions">
+          <el-button type="link" @click="refreshHotQuestions">
             <span>🔄</span>
             换一批
           </el-button>
@@ -117,7 +117,7 @@
       <div class="faq-list" v-if="searchQuery">
         <div class="section-header">
           <h3>搜索结果 ({{ filteredFAQs.length }})</h3>
-          <el-button type="text" @click="clearSearch">
+          <el-button type="link" @click="clearSearch">
             清除搜索
           </el-button>
         </div>
@@ -148,7 +148,7 @@
       <div class="category-detail" v-if="currentCategory">
         <div class="section-header">
           <h3>{{ currentCategory.name }}</h3>
-          <el-button type="text" @click="backToCategories">
+          <el-button type="link" @click="backToCategories">
             <span>←</span>
             返回分类
           </el-button>

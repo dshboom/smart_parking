@@ -173,3 +173,72 @@ export function getAdminParkingSpaces(params) {
     params
   })
 }
+
+// ===== 我的停车记录专用接口 =====
+
+// 获取我的停车记录列表
+export function getMyParkingRecords(params) {
+  return request({
+    url: '/api/parking/my/records',
+    method: 'get',
+    params
+  })
+}
+
+// 获取我的停车记录详情
+export function getMyParkingRecord(recordId) {
+  return request({
+    url: `/api/parking/my/records/${recordId}`,
+    method: 'get'
+  })
+}
+
+// 获取当前停车状态
+export function getMyCurrentParking() {
+  return request({
+    url: '/api/parking/my/current',
+    method: 'get'
+  })
+}
+
+// 开始停车（用户手动记录进入）
+export function startMyParking(data) {
+  return request({
+    url: '/api/parking/my/start',
+    method: 'post',
+    data
+  })
+}
+
+// 结束停车（用户手动记录离开）
+export function endMyParking(recordId) {
+  return request({
+    url: `/api/parking/my/end/${recordId}`,
+    method: 'post'
+  })
+}
+
+// 获取停车费用计算
+export function calculateMyParkingFee(recordId) {
+  return request({
+    url: `/api/parking/my/records/${recordId}/fee`,
+    method: 'get'
+  })
+}
+
+// 获取停车统计信息
+export function getMyParkingStats() {
+  return request({
+    url: '/api/parking/my/stats',
+    method: 'get'
+  })
+}
+
+// 获取停车趋势数据
+export function getMyParkingTrends(days = 30) {
+  return request({
+    url: '/api/parking/my/trends',
+    method: 'get',
+    params: { days }
+  })
+}

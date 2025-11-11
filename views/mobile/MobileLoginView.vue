@@ -90,15 +90,7 @@
             快速注册
           </el-button>
           
-          <el-button 
-            type="info" 
-            class="guest-button" 
-            @click="guestLogin"
-            size="large"
-          >
-            <span class="button-icon">👤</span>
-            游客模式
-          </el-button>
+
         </div>
       </div>
       
@@ -196,13 +188,6 @@ export default {
     
     goToRegister() {
       this.$router.push('/register')
-    },
-    
-    guestLogin() {
-      this.$message.info('🚗 正在进入游客模式...')
-      this.$store.dispatch('user/updateUserStatus', 'guest').then(() => {
-        this.$router.push('/mobile/entry')
-      })
     },
     
     handleForgetPassword() {
@@ -607,8 +592,7 @@ export default {
   display: flex;
   gap: 10px;
   
-  .register-button,
-  .guest-button {
+  .register-button {
     flex: 1;
     height: 45px;
     font-size: 14px;
@@ -641,16 +625,7 @@ export default {
     }
   }
   
-  .guest-button {
-    background: #f8f9fa;
-    border: 2px solid #dcdfe6;
-    color: #666;
-    
-    &:hover {
-      background: #f0f0f0;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-  }
+
   
   .button-icon {
     font-size: 16px;
@@ -658,16 +633,14 @@ export default {
   }
   
   .login-button:hover .button-icon,
-  .register-button:hover .button-icon,
-  .guest-button:hover .button-icon {
+  .register-button:hover .button-icon {
     transform: translateX(3px);
   }
   
   @media screen and (max-width: 375px) {
     gap: 8px;
     
-    .register-button,
-    .guest-button {
+    .register-button {
       height: 42px;
       font-size: 13px;
       border-radius: 20px;
@@ -681,8 +654,7 @@ export default {
   @media screen and (max-height: 700px) {
     gap: 8px;
     
-    .register-button,
-    .guest-button {
+    .register-button {
       height: 40px;
       font-size: 13px;
     }

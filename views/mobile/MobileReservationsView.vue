@@ -341,16 +341,14 @@
 <script>
 import {
   ArrowLeft, Plus, Clock, Calendar, Timer, Location,
-  Position, Refresh, Close, Check, Warning, InfoFilled,
-  View, User, Iphone
+  Position, Refresh, Close, Check, Warning, InfoFilled
 } from '@element-plus/icons-vue'
 
 export default {
   name: 'MobileReservationsView',
   components: {
     ArrowLeft, Plus, Clock, Calendar, Timer, Location,
-    Position, Refresh, Close, Check, Warning, InfoFilled,
-    View, User, Iphone
+    Position, Refresh, Close, Check, Warning, InfoFilled
   },
   data() {
     return {
@@ -465,7 +463,7 @@ export default {
       }
     },
 
-    onParkingLotChange(parkingLotId) {
+    onParkingLotChange() {
       // 模拟加载可用车位
       this.availableSpaces = [
         { number: 'A001', type: '标准车位' },
@@ -507,13 +505,13 @@ export default {
       }
     },
 
-    navigateToParking(reservation) {
+    navigateToParking() {
       // 模拟导航功能
-      this.$message.info(`正在导航到 ${reservation.parkingLotName} ${reservation.spaceNumber}号车位`)
+      this.$message.info(`正在导航到 ${this.activeReservations[0].parkingLotName} ${this.activeReservations[0].spaceNumber}号车位`)
       // 实际项目中这里会调用地图导航API
     },
 
-    extendReservation(reservation) {
+    extendReservation() {
       this.$message.info('延长预约功能开发中...')
       // 实际项目中这里会打开延长预约的对话框
     },
@@ -550,7 +548,7 @@ export default {
       }
     },
 
-    viewReservationDetails(reservation) {
+    viewReservationDetails() {
       this.$message.info('预约详情功能开发中...')
       // 实际项目中这里会跳转到详情页面或打开详情对话框
     },
@@ -558,53 +556,14 @@ export default {
     rebookReservation(reservation) {
       // 使用原预约信息填充新预约表单
       this.newReservation = {
-        parkingLotId: reservation.parkingLotId || '',
-        spaceNumber: reservation.spaceNumber,
+        parkingLotId: reservation.parkingLotId,
+        spaceNumber: '',
         date: '',
         timeSlot: '',
-        vehicleId: reservation.vehicleId || '',
+        vehicleId: '',
         remark: ''
       }
       this.showAddReservation = true
-    },
-
-    async submitReservation() {
-      this.$refs.reservationFormRef.validate(async (valid) => {
-        if (!valid) return
-
-        this.submitting = true
-        try {
-          // 模拟提交预约
-          // const response = await this.$store.dispatch('reservation/createReservation', this.newReservation)
-          
-          const newReservationData = {
-            id: Date.now(),
-            parkingLotName: this.parkingLots.find(lot => lot.id === this.newReservation.parkingLotId)?.name,
-            spaceNumber: this.newReservation.spaceNumber,
-            startTime: `${this.newReservation.date}T${this.newReservation.timeSlot.split('-')[0]}:00`,
-            endTime: `${this.newReservation.date}T${this.newReservation.timeSlot.split('-')[1]}:00`,
-            status: 'active'
-          }
-          
-          this.activeReservations.unshift(newReservationData)
-          this.showAddReservation = false
-          this.$message.success('预约成功')
-          
-          // 重置表单
-          this.newReservation = {
-            parkingLotId: '',
-            spaceNumber: '',
-            date: '',
-            timeSlot: '',
-            vehicleId: '',
-            remark: ''
-          }
-        } catch (error) {
-          this.$message.error(error.message || '预约失败')
-        } finally {
-          this.submitting = false
-        }
-      })
     }
   }
 }

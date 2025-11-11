@@ -8,7 +8,8 @@ const getDefaultState = () => {
     token: getToken(),
     name: localStorage.getItem('name') || '',
     avatar: localStorage.getItem('avatar') || '',
-    status: localStorage.getItem('user_status') || ''
+    status: localStorage.getItem('user_status') || '',
+    vip_level: null
   }
 }
 
@@ -32,6 +33,9 @@ const mutations = {
   SET_STATUS: (state, status) => {
     state.status = status
     localStorage.setItem('user_status', status)
+  },
+  SET_VIP_LEVEL: (state, level) => {
+    state.vip_level = level
   }
 }
 
@@ -73,9 +77,10 @@ const actions = {
           return reject('Verification failed, please Login again.')
         }
 
-        const { username, role } = response
+        const { username, role, vip_level } = response
         commit('SET_NAME', username)
         commit('SET_STATUS', role)
+        commit('SET_VIP_LEVEL', Number.isFinite(vip_level) ? vip_level : 0)
         resolve(response)
       }).catch(error => {
         reject(error)

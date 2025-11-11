@@ -25,3 +25,13 @@ export function calcParkingFee(durationHours, isVip = false) {
     params: { duration_hours: durationHours, is_vip: isVip }
   })
 }
+
+// 高级计费：支持分时段、每日封顶、VIP每日免费时长等
+// params: { entry_time?: ISOString, exit_time?: ISOString, duration_hours?: number, is_vip?: boolean }
+export function calcParkingFeeAdvanced(params) {
+  return request({
+    url: '/pricing/calc/parking-fee-advanced',
+    method: 'post',
+    data: params
+  })
+}

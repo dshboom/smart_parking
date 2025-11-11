@@ -64,6 +64,7 @@ service.interceptors.response.use(
     const status = error?.response?.status
     const requestUrl = error?.config?.url || ''
     const errorMessage = error?.response?.data?.detail || error?.response?.data?.message || error?.message
+    const suppressToast = Boolean(error?.config?.suppressErrorToast)
 
     // 登录过期（401）自动跳转到登录页
     if (status === 401) {
@@ -88,12 +89,14 @@ service.interceptors.response.use(
         })
       }
     } else {
-      // 其他错误保留原有提示逻辑
-      ElMessage({
-        message: errorMessage,
-        type: 'error',
-        duration: 5 * 1000
-      })
+      // 其他错误：支持按请求配置关闭错误弹窗
+      if (!suppressToast) {
+        ElMessage({
+          message: errorMessage,
+          type: 'error',
+          duration: 5 * 1000
+        })
+      }
     }
     return Promise.reject(error)
   }

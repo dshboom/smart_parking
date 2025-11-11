@@ -136,7 +136,7 @@
         </div>
         <el-button 
           v-if="recentTransactions.length > 0"
-          type="text" 
+          type="link" 
           @click="goToAllTransactions"
           class="view-all-btn"
         >

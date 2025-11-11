@@ -214,14 +214,15 @@ export default {
         const config = await pricingApi.getPricingConfig().catch(() => null)
         this.pricingConfig = config
         this.vipRequired = Boolean(config?.reservation?.vipRequired)
-      } catch (_) {
+      } catch {
         this.vipRequired = false
       }
       try {
-        // 拉取当前用户的VIP状态
-        const vip = await this.$store.dispatch('user/getVipMe').catch(() => null)
-        this.hasActiveVip = Boolean(vip?.is_active)
-      } catch (_) {
+        // 静默校验：使用 /users/me 的 vip_level 字段，不命中 /me/vip
+        const info = await this.$store.dispatch('user/getInfo').catch(() => null)
+        const level = info?.vip_level
+        this.hasActiveVip = Number.isFinite(level) && level > 0
+      } catch {
         this.hasActiveVip = false
       }
     },
@@ -293,16 +294,16 @@ export default {
 
     // 检测用户类型选择合适车位类型
     async resolveSpaceType() {
-      let spaceType = 'standard'
+      // 优先使用 store 中的 vip_level（避免重复请求）
+      const level = this.$store?.state?.user?.vip_level
+      if (Number.isFinite(level) && level > 0) return 'vip'
       try {
         const info = await this.$store.dispatch('user/getInfo').catch(() => null)
-        if (info && typeof info.vip_level === 'number') {
-          spaceType = 'vip'
-        }
-      } catch (_) {
-        // ignore errors, default remains 'standard'
+        const lvl = info?.vip_level
+        return Number.isFinite(lvl) && lvl > 0 ? 'vip' : 'standard'
+      } catch {
+        return 'standard'
       }
-      return spaceType
     },
 
     // 调用后端计算最近可用车位路径，并将结果传递给可视化

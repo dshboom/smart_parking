@@ -1,131 +1,39 @@
 <template>
   <div class="parking-lot-visualization">
-    <div class="controls-panel">
-      <el-card class="control-card">
-        <template #header>
-          <div class="card-header">
-            <span>停车场控制面板</span>
-            <el-button-group>
-              <el-button 
-                v-if="!readOnly"
-                :type="editMode ? 'danger' : 'primary'" 
-                size="small"
-                @click="toggleEditMode"
-              >
-                {{ editMode ? '退出编辑' : '编辑模式' }}
-              </el-button>
-              <el-button type="success" size="small" @click="findNearestEmptySpot">
-                导航到最近空位
-              </el-button>
-              <el-button v-if="!readOnly" type="warning" size="small" @click="resetLayout">
-                重置布局
-              </el-button>
-            </el-button-group>
-          </div>
-        </template>
+    <ControlPanel
+      :read-only="readOnly"
+      v-model:edit-mode="editMode"
+      v-model:selected-tool="selectedTool"
+      v-model:selected-spot="selectedSpot"
+      :stats="stats"
+      :path="path"
+      @find-nearest-empty-spot="findNearestEmptySpot"
+      @reset-layout="resetLayout"
+      @save-selected-spot-attributes="saveSelectedSpotAttributes"
+    />
 
-        <div class="controls-content">
-          <div v-if="editMode && !readOnly" class="edit-tools">
-            <h4>编辑工具</h4>
-            <el-radio-group v-model="selectedTool" size="small">
-              <el-radio-button label="parking">停车位</el-radio-button>
-              <el-radio-button label="wall">墙壁</el-radio-button>
-              <el-radio-button label="road">道路</el-radio-button>
-              <el-radio-button label="entrance">入口</el-radio-button>
-              <el-radio-button label="exit">出口</el-radio-button>
-            </el-radio-group>
-          </div>
-
-          <div v-if="editMode && selectedSpot && !readOnly" class="edit-attributes">
-            <h4>车位属性</h4>
-            <el-form label-width="90px" size="small">
-              <el-form-item label="车位类型">
-                <el-select v-model="selectedSpot.space_type" style="width: 160px">
-                  <el-option label="普通" value="standard" />
-                  <el-option label="VIP" value="vip" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="维护停用">
-                <el-switch v-model="selectedSpot.is_under_maintenance" />
-              </el-form-item>
-              <el-form-item label="预约状态">
-                <el-tag :type="selectedSpot.is_reserved ? 'warning' : 'success'">
-                  {{ selectedSpot.is_reserved ? '已预约' : '未预约' }}
-                </el-tag>
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="saveSelectedSpotAttributes">保存</el-button>
-              </el-form-item>
-            </el-form>
-          </div>
-
-          <div class="info-panel">
-            <el-row :gutter="20">
-              <el-col :span="8">
-                <div class="stat-item">
-                  <div class="stat-label">总停车位</div>
-                  <div class="stat-value">{{ stats.total_spaces }}</div>
-                </div>
-              </el-col>
-              <el-col :span="8">
-                <div class="stat-item">
-                  <div class="stat-label">已占用</div>
-                  <div class="stat-value occupied">{{ stats.occupied_spaces }}</div>
-                </div>
-              </el-col>
-              <el-col :span="8">
-                <div class="stat-item">
-                  <div class="stat-label">可用</div>
-                  <div class="stat-value available">{{ stats.available_spaces }}</div>
-                </div>
-              </el-col>
-            </el-row>
-          </div>
-
-          <div v-if="path.length > 0" class="path-info">
-            <el-alert
-              :title="`找到路径！距离: ${path.length - 1} 步，预计时间: ${(path.length - 1) * 30} 秒`"
-              type="success"
-              :closable="false"
-            />
-          </div>
-        </div>
-      </el-card>
-    </div>
+    
 
     <div class="visualization-container">
-      <el-card>
-        <template #header>
-          <span>停车场布局 - {{ parkingLot?.name || '未命名停车场' }}</span>
-        </template>
-        
-        <div class="grid-container" :style="gridStyle">
-          <el-tooltip
-            v-for="(cell, index) in flattenedGrid"
-            :key="index"
-            :content="getTooltipContent(cell)"
-            placement="top"
-            effect="dark"
-          >
-            <div
-              :class="getCellClasses(cell, index)"
-              @click="handleCellClick(cell.row, cell.col)"
-              @mouseenter="handleCellHover(cell.row, cell.col)"
-            >
-              <div class="cell-content">
-                <span v-if="cell.type === 'entrance'" class="cell-text">入口</span>
-                <span v-else-if="cell.type === 'exit'" class="cell-text">出口</span>
-                <span v-else-if="cell.type === 'parking' && cell.isUnderMaintenance" class="cell-text">🛠️</span>
-                <span v-else-if="cell.type === 'parking' && cell.isReserved" class="cell-text">🔒</span>
-                <span v-else-if="cell.type === 'parking' && cell.spaceType === 'vip'" class="cell-text">⭐</span>
-                <span v-else-if="cell.type === 'parking' && cell.isOccupied" class="cell-text">🚗</span>
-                <span v-else-if="cell.type === 'parking'" class="cell-text">P</span>
-              </div>
-              <div v-if="isInPath(cell.row, cell.col)" class="path-indicator"></div>
-            </div>
-          </el-tooltip>
-        </div>
-      </el-card>
+      <div class="grid-wrapper">
+        <el-card>
+          <template #header>
+            <span>停车场布局 - {{ parkingLot?.name || '未命名停车场' }}</span>
+          </template>
+          
+          <ParkingGrid
+            :grid="grid"
+            :occupied-spots="occupiedSpots"
+            :coord-to-space="coordToSpace"
+            :path="path"
+            :GRID_ROWS="GRID_ROWS"
+            :GRID_COLS="GRID_COLS"
+            :highlight-coord="highlightCoord"
+            @cell-click="handleCellClick"
+            @cell-hover="handleCellHover"
+          />
+        </el-card>
+      </div>
     </div>
 
     <div class="legend-panel">
@@ -185,9 +93,16 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as parkingApi from '@/api/parking'
 import { wsManager } from '@/utils/websocket'
+import { usePathfinding } from '@/composables/usePathfinding'
+import ParkingGrid from './ParkingGrid.vue'
+import ControlPanel from './ControlPanel.vue'
 
 export default {
   name: 'ParkingLotVisualization',
+  components: {
+    ParkingGrid,
+    ControlPanel,
+  },
   props: {
     parkingLotId: {
       type: Number,
@@ -241,36 +156,7 @@ export default {
     const GRID_ROWS = 10
     const GRID_COLS = 14
 
-    // Computed
-    const flattenedGrid = computed(() => {
-      const result = []
-      for (let row = 0; row < grid.value.length; row++) {
-        for (let col = 0; col < grid.value[row].length; col++) {
-          const key = `${row},${col}`
-          const space = coordToSpace.value.get(key)
-          result.push({
-            row,
-            col,
-            type: grid.value[row][col],
-            isOccupied: occupiedSpots.value.has(key),
-            spaceType: space?.space_type || 'standard',
-            isReserved: space?.is_reserved || false,
-            isUnderMaintenance: space?.is_under_maintenance || false
-          })
-        }
-      }
-      return result
-    })
-
-    const gridStyle = computed(() => ({
-      display: 'grid',
-      gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
-      gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
-      gap: '2px',
-      width: '100%',
-      maxWidth: '800px',
-      aspectRatio: `${GRID_COLS} / ${GRID_ROWS}`
-    }))
+    const { astar } = usePathfinding(grid, occupiedSpots, GRID_ROWS, GRID_COLS)
 
     // Methods
     const initGrid = () => {
@@ -352,98 +238,6 @@ export default {
       }
     }
 
-    const heuristic = (a, b) => {
-      return Math.abs(a.row - b.row) + Math.abs(a.col - b.col)
-    }
-
-    const getNeighbors = (node) => {
-      const neighbors = []
-      const directions = [
-        { row: -1, col: 0 }, // up
-        { row: 1, col: 0 },  // down
-        { row: 0, col: -1 }, // left
-        { row: 0, col: 1 }   // right
-      ]
-
-      for (const dir of directions) {
-        const newRow = node.row + dir.row
-        const newCol = node.col + dir.col
-
-        if (newRow >= 0 && newRow < GRID_ROWS && newCol >= 0 && newCol < GRID_COLS) {
-          const cellType = grid.value[newRow][newCol]
-          if (cellType !== 'wall') {
-            const key = `${newRow},${newCol}`
-            const isOccupied = occupiedSpots.value.has(key)
-            const isTargetOccupied = occupiedSpots.value.has(`${node.row},${node.col}`)
-            
-            if (!isOccupied || isTargetOccupied) {
-              neighbors.push({ row: newRow, col: newCol })
-            }
-          }
-        }
-      }
-      return neighbors
-    }
-
-    const astar = (start, goal) => {
-      const openSet = [start]
-      const closedSet = new Set()
-      const cameFrom = new Map()
-      const gScore = new Map()
-      const fScore = new Map()
-
-      const getKey = (node) => `${node.row},${node.col}`
-
-      gScore.set(getKey(start), 0)
-      fScore.set(getKey(start), heuristic(start, goal))
-
-      while (openSet.length > 0) {
-        // Find node with lowest fScore
-        let current = openSet[0]
-        let currentIndex = 0
-        for (let i = 1; i < openSet.length; i++) {
-          if (fScore.get(getKey(openSet[i])) < fScore.get(getKey(current))) {
-            current = openSet[i]
-            currentIndex = i
-          }
-        }
-
-        if (current.row === goal.row && current.col === goal.col) {
-          // Reconstruct path
-          const path = []
-          let temp = current
-          while (temp) {
-            path.unshift(temp)
-            temp = cameFrom.get(getKey(temp))
-          }
-          return path
-        }
-
-        openSet.splice(currentIndex, 1)
-        closedSet.add(getKey(current))
-
-        const neighbors = getNeighbors(current)
-        for (const neighbor of neighbors) {
-          const neighborKey = getKey(neighbor)
-          if (closedSet.has(neighborKey)) continue
-
-          const tentativeGScore = gScore.get(getKey(current)) + 1
-
-          if (!openSet.some(node => getKey(node) === neighborKey)) {
-            openSet.push(neighbor)
-          } else if (tentativeGScore >= gScore.get(neighborKey)) {
-            continue
-          }
-
-          cameFrom.set(neighborKey, current)
-          gScore.set(neighborKey, tentativeGScore)
-          fScore.set(neighborKey, tentativeGScore + heuristic(neighbor, goal))
-        }
-      }
-
-      return null // No path found
-    }
-
     const findNearestEmptySpot = async () => {
       if (!props.parkingLotId) return
       
@@ -515,7 +309,7 @@ export default {
       }
     }
 
-    const handleCellClick = async (row, col) => {
+    const handleCellClick = async ({ row, col }) => {
       const key = `${row},${col}`
       const cellType = grid.value[row][col]
 
@@ -627,7 +421,7 @@ export default {
       }
     }
 
-    const handleCellHover = (row, col) => {
+    const handleCellHover = ({ row, col }) => {
       // 可以添加悬停效果
     }
 
@@ -720,6 +514,13 @@ export default {
       return classes
     }
 
+    const highlightCoord = computed(() => {
+      if (props.highlightSpace && spaceIdToCoord.value) {
+        return spaceIdToCoord.value.get(props.highlightSpace) || null
+      }
+      return null
+    })
+
     const getTooltipContent = (cell) => {
       if (cell.type === 'entrance') return '入口'
       if (cell.type === 'exit') return '出口'
@@ -780,20 +581,20 @@ export default {
       // State
       parkingLot,
       grid,
+      coordToSpace,
       occupiedSpots,
       path,
       editMode,
       selectedTool,
       selectedSpot,
       stats,
+      highlightCoord,
       
       // Constants
       GRID_ROWS,
       GRID_COLS,
       
       // Computed
-      flattenedGrid,
-      gridStyle,
       
       // Methods
       handleCellClick,

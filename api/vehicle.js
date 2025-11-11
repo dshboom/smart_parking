@@ -71,6 +71,14 @@ export function getVehicleByLicensePlate(licensePlate) {
   })
 }
 
+// 获取车辆当前实时费用（基于入场时间至现在）
+export function getVehicleCurrentFee(licensePlate) {
+  return request({
+    url: `/vehicles/${licensePlate}/fee`,
+    method: 'get'
+  })
+}
+
 // 管理端：车辆统计概览
 export function getVehicleStatsOverview() {
   return request({

@@ -18,137 +18,70 @@
 
     <!-- 现代化统计卡片 -->
     <div class="stats-grid">
-      <div class="stat-card modern-card total-card">
-        <div class="card-background">
-          <div class="card-icon-wrapper">
-            <el-icon class="card-icon"><Van /></el-icon>
-          </div>
-        </div>
-        <div class="card-content">
-          <div class="stat-number">{{ statistics.totalVehicles }}</div>
-          <div class="stat-label">总车辆数</div>
-          <div class="stat-trend">
-            <el-icon><TrendCharts /></el-icon>
-            <span>+12% 较昨日</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="stat-card modern-card current-card">
-        <div class="card-background">
-          <div class="card-icon-wrapper">
-            <el-icon class="card-icon"><Position /></el-icon>
-          </div>
-        </div>
-        <div class="card-content">
-          <div class="stat-number">{{ statistics.currentInParking }}</div>
-          <div class="stat-label">当前在场</div>
-          <div class="stat-trend">
-            <el-icon><TrendCharts /></el-icon>
-            <span>+5% 较昨日</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="stat-card modern-card today-card">
-        <div class="card-background">
-          <div class="card-icon-wrapper">
-            <el-icon class="card-icon"><TrendCharts /></el-icon>
-          </div>
-        </div>
-        <div class="card-content">
-          <div class="stat-number">{{ statistics.todayEntries }}</div>
-          <div class="stat-label">今日入场</div>
-          <div class="stat-trend">
-            <el-icon><TrendCharts /></el-icon>
-            <span>+18% 较昨日</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="stat-card modern-card occupancy-card">
-        <div class="card-background">
-          <div class="card-icon-wrapper">
-            <el-icon class="card-icon"><CircleCheck /></el-icon>
-          </div>
-        </div>
-        <div class="card-content">
-          <div class="stat-number">{{ statistics.occupancyRate }}</div>
-          <div class="stat-label">占用率</div>
-          <div class="stat-trend">
-            <el-icon><TrendCharts /></el-icon>
-            <span>{{ statistics.occupiedSpaces }}/{{ statistics.totalSpaces }} 车位</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="stat-card modern-card lots-card">
-        <div class="card-background">
-          <div class="card-icon-wrapper">
-            <el-icon class="card-icon"><TrendCharts /></el-icon>
-          </div>
-        </div>
-        <div class="card-content">
-          <div class="stat-number">{{ statistics.totalParkingLots }}</div>
-          <div class="stat-label">停车场数量</div>
-          <div class="stat-trend">
-            <el-icon><TrendCharts /></el-icon>
-            <span>运营中</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="stat-card modern-card time-card">
-        <div class="card-background">
-          <div class="card-icon-wrapper">
-            <el-icon class="card-icon"><Clock /></el-icon>
-          </div>
-        </div>
-        <div class="card-content">
-          <div class="stat-number">{{ statistics.avgParkingTime }}</div>
-          <div class="stat-label">平均停车时长</div>
-          <div class="stat-trend">
-            <el-icon><TrendCharts /></el-icon>
-            <span>-8% 较昨日</span>
-          </div>
-        </div>
-      </div>
+      <StatisticCard
+        :value="statistics.totalVehicles"
+        label="总车辆数"
+        trend-text="+12% 较昨日"
+        variant="total"
+        :icon="Van"
+      />
+      <StatisticCard
+        :value="statistics.currentInParking"
+        label="当前在场"
+        trend-text="+5% 较昨日"
+        variant="current"
+        :icon="Position"
+      />
+      <StatisticCard
+        :value="statistics.todayEntries"
+        label="今日入场"
+        trend-text="+18% 较昨日"
+        variant="today"
+        :icon="TrendCharts"
+      />
+      <StatisticCard
+        :value="statistics.occupancyRate"
+        label="占用率"
+        :trend-text="`${statistics.occupiedSpaces}/${statistics.totalSpaces} 车位`"
+        variant="occupancy"
+        :icon="CircleCheck"
+      />
+      <StatisticCard
+        :value="statistics.totalParkingLots"
+        label="停车场数量"
+        trend-text="运营中"
+        variant="lots"
+        :icon="TrendCharts"
+      />
+      <StatisticCard
+        :value="statistics.avgParkingTime"
+        label="平均停车时长"
+        trend-text="-8% 较昨日"
+        variant="time"
+        :icon="Clock"
+      />
     </div>
 
     <!-- 现代化图表区域 -->
     <div class="charts-section">
-      <div class="chart-container modern-card">
-        <div class="chart-header">
-          <div class="header-info">
-            <h3 class="chart-title">24小时车辆进出趋势</h3>
-            <p class="chart-subtitle">实时监控车辆流动情况</p>
-          </div>
-          <div class="chart-actions">
-            <el-button type="text" class="chart-btn">
-              <el-icon><Refresh /></el-icon>
-            </el-button>
-          </div>
-        </div>
-        <div class="chart-content">
-          <div ref="hourlyChart" class="chart-area"></div>
-        </div>
-      </div>
+      <HourlyChart
+        :title="'24小时车辆进出趋势'"
+        :subtitle="'实时监控车辆流动情况'"
+        :x-labels="hourlyLabels"
+        :entries="hourlyEntries"
+        :exits="hourlyExits"
+        @refresh="refreshData"
+      />
 
       <div class="chart-container modern-card">
-        <div class="chart-header">
-          <div class="header-info">
-            <h3 class="chart-title">最近7天停车统计</h3>
-            <p class="chart-subtitle">周度数据分析报告</p>
-          </div>
-          <div class="chart-actions">
-            <el-button type="text" class="chart-btn">
-              <el-icon><Refresh /></el-icon>
-            </el-button>
-          </div>
-        </div>
-        <div class="chart-content">
-          <div ref="weeklyChart" class="chart-area"></div>
-        </div>
+        <WeeklyChart
+          :title="'最近7天停车统计'"
+          :subtitle="'周度数据分析报告'"
+          :x-labels="weeklyLabels"
+          :entries="weeklyEntries"
+          :exits="weeklyExits"
+          @refresh="refreshData"
+        />
       </div>
     </div>
 
@@ -198,7 +131,7 @@
         </div>
         <div class="section-actions">
           <el-button type="primary" class="view-all-btn" @click="viewAllRecords" v-permission="'record:view'">
-            <el-icon><View /></el-icon>
+            <el-icon><ViewIcon /></el-icon>
             查看全部
           </el-button>
         </div>
@@ -261,14 +194,17 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
-import { Van, Position, TrendCharts, Clock, Refresh, View, CircleCheck, CircleClose } from '@element-plus/icons-vue'
+import { Van, Position, TrendCharts, Clock, Refresh, View as ViewIcon, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import { getAdminParkingStats, getAdminParkingTrends, getParkingLots } from '@/api/parking'
 import { getVehicleStatsOverview, getVehicleRecordsList } from '@/api/vehicle'
 import ParkingLotVisualization from '@/components/ParkingLotVisualization.vue'
+import StatisticCard from '@/components/dashboard/StatisticCard.vue'
+import HourlyChart from '@/components/dashboard/HourlyChart.vue'
+import WeeklyChart from '@/components/dashboard/WeeklyChart.vue'
 import { wsManager, subscribeToVehicleEntry, subscribeToVehicleExit, subscribeToParkingUpdates } from '@/utils/websocket'
 
 export default {
@@ -279,10 +215,13 @@ export default {
     TrendCharts,
     Clock,
     Refresh,
-    View,
+    ViewIcon,
     CircleCheck,
     CircleClose,
-    ParkingLotVisualization
+    ParkingLotVisualization,
+    StatisticCard,
+    HourlyChart,
+    WeeklyChart
   },
   setup() {
     const router = useRouter()
@@ -290,6 +229,16 @@ export default {
     const weeklyChart = ref(null)
     let hourlyChartInstance = null
     let weeklyChartInstance = null
+
+    // 小时图表响应式数据，供 HourlyChart 使用
+    const hourlyLabels = ref(['00:00','04:00','08:00','12:00','16:00','20:00','24:00'])
+    const hourlyEntries = ref([120,132,101,134,90,230,210])
+    const hourlyExits = ref([220,182,191,234,290,330,310])
+
+    // 周图表响应式数据，供 WeeklyChart 使用
+    const weeklyLabels = ref([])
+    const weeklyEntries = ref([])
+    const weeklyExits = ref([])
 
     // 停车场可视化相关
     const parkingLots = ref([])
@@ -605,89 +554,131 @@ export default {
       console.log('选中车位:', space)
     }
 
-    // WebSocket实时数据更新处理
+    // 计算并更新占用率显示
+    const recomputeOccupancyRate = () => {
+      const total = statistics.totalSpaces || 0
+      const occupied = statistics.occupiedSpaces || 0
+      statistics.occupancyRate = total > 0 ? `${Math.round((occupied / total) * 100)}%` : '0%'
+    }
+
+    // 将实时事件应用到小时趋势（4小时一个桶）
+    const bumpHourlySeries = (isEntry, atTime) => {
+      const date = atTime ? new Date(atTime) : new Date()
+      const hour = date.getHours()
+      // 显示标签包含 24:00 终点，实际桶取 0..5（00,04,08,12,16,20）
+      const bucket = Math.min(Math.floor(hour / 4), hourlyLabels.value.length - 2)
+      if (isEntry) {
+        const next = [...hourlyEntries.value]
+        next[bucket] = (next[bucket] || 0) + 1
+        hourlyEntries.value = next
+      } else {
+        const next = [...hourlyExits.value]
+        next[bucket] = (next[bucket] || 0) + 1
+        hourlyExits.value = next
+      }
+    }
+
+    // 将实时事件应用到周趋势（按当天日期累加）
+    const bumpWeeklySeries = (isEntry) => {
+      const today = new Date().toISOString().split('T')[0]
+      let idx = weeklyLabels.value.findIndex(d => d === today)
+      // 若后台趋势未包含今天，则追加到末尾
+      if (idx === -1) {
+        weeklyLabels.value = [...weeklyLabels.value, today]
+        weeklyEntries.value = [...weeklyEntries.value, 0]
+        weeklyExits.value = [...weeklyExits.value, 0]
+        idx = weeklyLabels.value.length - 1
+      }
+      if (isEntry) {
+        const next = [...weeklyEntries.value]
+        next[idx] = (next[idx] || 0) + 1
+        weeklyEntries.value = next
+      } else {
+        const next = [...weeklyExits.value]
+        next[idx] = (next[idx] || 0) + 1
+        weeklyExits.value = next
+      }
+    }
+
+    // 将事件追加到最近记录列表（最多保留10条）
+    const pushRecentRecord = (record) => {
+      const list = [record, ...recentRecords.value]
+      recentRecords.value = list.slice(0, 10)
+    }
+
+    // WebSocket 实时数据更新处理（使用真实事件）
     const handleVehicleEntry = (data) => {
       console.log('车辆入场:', data)
-      // 刷新统计数据
-      loadDashboardData()
-      // 更新图表数据
-      updateChartData()
+      statistics.todayEntries += 1
+      statistics.currentInParking += 1
+
+      const entryTime = data?.entry_time || new Date().toISOString()
+      pushRecentRecord({
+        id: data?.id || Date.now(),
+        license_plate: data?.license_plate || '未知车牌',
+        entry_time: entryTime,
+        exit_time: null,
+        is_in_parking: true
+      })
+
+      bumpHourlySeries(true, entryTime)
+      bumpWeeklySeries(true)
     }
 
     const handleVehicleExit = (data) => {
       console.log('车辆出场:', data)
-      // 刷新统计数据
-      loadDashboardData()
-      // 更新图表数据
-      updateChartData()
+      statistics.currentInParking = Math.max(0, statistics.currentInParking - 1)
+
+      const exitTime = data?.exit_time || new Date().toISOString()
+      pushRecentRecord({
+        id: data?.id || Date.now(),
+        license_plate: data?.license_plate || '未知车牌',
+        entry_time: data?.entry_time || null,
+        exit_time: exitTime,
+        is_in_parking: false
+      })
+
+      bumpHourlySeries(false, exitTime)
+      bumpWeeklySeries(false)
     }
 
     const handleParkingUpdate = (data) => {
       console.log('停车场状态更新:', data)
-      // 刷新统计数据
-      loadDashboardData()
+      const evt = data?.event || data?.type
+      if (evt === 'space_occupied') {
+        statistics.occupiedSpaces += 1
+      } else if (evt === 'space_vacated') {
+        statistics.occupiedSpaces = Math.max(0, statistics.occupiedSpaces - 1)
+      }
+      recomputeOccupancyRate()
     }
 
-    const updateChartData = () => {
-      // 更新小时图表数据
-      if (hourlyChartInstance) {
-        const currentHour = new Date().getHours()
-        const newEntryData = generateRandomData(7, 50, 300)
-        const newExitData = generateRandomData(7, 40, 280)
-        
-        hourlyChartInstance.setOption({
-          series: [
-            {
-              name: '入场',
-              data: newEntryData
-            },
-            {
-              name: '出场',
-              data: newExitData
-            }
-          ]
-        })
-      }
-      
-      // 更新周图表数据
-      if (weeklyChartInstance) {
-        const newWeekData = generateRandomData(7, 200, 800)
-        const newRevenueData = generateRandomData(7, 1000, 5000)
-        
-        weeklyChartInstance.setOption({
-          series: [
-            {
-              name: '停车数量',
-              data: newWeekData
-            },
-            {
-              name: '收入',
-              data: newRevenueData
-            }
-          ]
-        })
-      }
-    }
-
-    const generateRandomData = (length, min, max) => {
-      return Array.from({ length }, () => Math.floor(Math.random() * (max - min + 1)) + min)
-    }
+    // 移除随机数据更新，图表由实时事件与趋势接口共同驱动
+    const updateChartData = () => {}
 
     // 初始化WebSocket连接
+    // 记录取消订阅函数，确保组件卸载时清理
+    let offVehicleEntry = null
+    let offVehicleExit = null
+    let offParkingUpdates = null
+
     const initWebSocketConnection = () => {
+      // 建立连接（若已连接则跳过）
+      try { wsManager.connect() } catch (e) {}
+
       // 订阅车辆入场事件
-      subscribeToVehicleEntry((data) => {
-        handleVehicleEntry(data)
+      offVehicleEntry = subscribeToVehicleEntry((payload) => {
+        handleVehicleEntry(payload)
       })
       
       // 订阅车辆出场事件
-      subscribeToVehicleExit((data) => {
-        handleVehicleExit(data)
+      offVehicleExit = subscribeToVehicleExit((payload) => {
+        handleVehicleExit(payload)
       })
       
-      // 订阅停车场状态更新
-      subscribeToParkingUpdates((data) => {
-        handleParkingUpdate(data)
+      // 订阅停车场状态更新（space_occupied / space_vacated）
+      offParkingUpdates = subscribeToParkingUpdates((payload) => {
+        handleParkingUpdate(payload)
       })
       
       // 暴露wsManager到全局对象供调试使用
@@ -773,17 +764,10 @@ export default {
 
     const updateTrendCharts = (trendsList) => {
       // 后端返回 { trends: [{ date, entries, exits, peak_vehicles }, ...] }
-      if (weeklyChartInstance && Array.isArray(trendsList)) {
-        const dates = trendsList.map(t => t.date)
-        const entries = trendsList.map(t => t.entries)
-        const exits = trendsList.map(t => t.exits)
-        weeklyChartInstance.setOption({
-          xAxis: [{ data: dates }],
-          series: [
-            { name: '入场', data: entries },
-            { name: '出场', data: exits }
-          ]
-        })
+      if (Array.isArray(trendsList)) {
+        weeklyLabels.value = trendsList.map(t => t.date)
+        weeklyEntries.value = trendsList.map(t => t.entries)
+        weeklyExits.value = trendsList.map(t => t.exits)
       }
     }
 
@@ -797,12 +781,15 @@ export default {
     }
 
     onMounted(() => {
-      // 先初始化图表实例，再加载数据进行填充
-      initHourlyChart()
-      initWeeklyChart()
-      loadDashboardData()
-      initWebSocketConnection()
-      window.addEventListener('resize', handleResize, { passive: true })
+      // 使用 nextTick 确保 DOM 完全渲染后再初始化图表
+      nextTick(() => {
+        // 先初始化图表实例，再加载数据进行填充
+        initHourlyChart()
+        initWeeklyChart()
+        loadDashboardData()
+        initWebSocketConnection()
+        window.addEventListener('resize', handleResize, { passive: true })
+      })
     })
 
     onUnmounted(() => {
@@ -813,12 +800,10 @@ export default {
       if (weeklyChartInstance) {
         weeklyChartInstance.dispose()
       }
-      // 取消WebSocket订阅
-      if (typeof window !== 'undefined') {
-        window.wsManager?.unsubscribe('parking_update')
-        window.wsManager?.unsubscribe('vehicle_entry')
-        window.wsManager?.unsubscribe('vehicle_exit')
-      }
+      // 取消 WebSocket 订阅
+      try { if (typeof offParkingUpdates === 'function') offParkingUpdates() } catch (e) {}
+      try { if (typeof offVehicleEntry === 'function') offVehicleEntry() } catch (e) {}
+      try { if (typeof offVehicleExit === 'function') offVehicleExit() } catch (e) {}
     })
 
     return {
@@ -826,6 +811,12 @@ export default {
       recentRecords,
       hourlyChart,
       weeklyChart,
+      hourlyLabels,
+      hourlyEntries,
+      hourlyExits,
+      weeklyLabels,
+      weeklyEntries,
+      weeklyExits,
       parkingLots,
       selectedParkingLot,
       viewAllRecords,

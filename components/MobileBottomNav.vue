@@ -4,6 +4,10 @@
       <el-icon><Position /></el-icon>
       <span>入场</span>
     </div>
+    <div class="nav-item" :class="{ active: activeTab === 'exit' }" @click="navigateTo('/mobile/exit')">
+      <el-icon><SwitchButton /></el-icon>
+      <span>结算</span>
+    </div>
     <div class="nav-item" :class="{ active: activeTab === 'find' }" @click="navigateTo('/mobile/find')">
       <el-icon><Search /></el-icon>
       <span>寻找</span>
@@ -16,19 +20,21 @@
 </template>
 
 <script>
-import { Position, Search, User } from '@element-plus/icons-vue'
+import { Position, Search, User, SwitchButton } from '@element-plus/icons-vue'
 
 export default {
   name: 'MobileBottomNav',
   components: {
     Position,
     Search,
-    User
+    User,
+    SwitchButton
   },
   computed: {
     activeTab() {
       const path = this.$route.path
       if (path.includes('/mobile/entry')) return 'entry'
+      if (path.includes('/mobile/exit')) return 'exit'
       if (path.includes('/mobile/find')) return 'find'
       if (path.includes('/mobile/profile')) return 'profile'
       return 'entry'
