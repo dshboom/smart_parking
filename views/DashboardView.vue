@@ -5,6 +5,7 @@
     <ParkingLotVisualization
       v-if="selectedParkingLot !== null"
       :parking-lot-id="selectedParkingLot"
+      :read-only="true"
       @space-selected="handleSpaceSelected"
     />
   </div>

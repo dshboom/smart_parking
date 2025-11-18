@@ -43,13 +43,13 @@
             <el-option label="退款" value="refunded" />
           </el-select>
         </el-form-item>
-        <el-form-item label="方式">
+        <el-form-item label="类型">
           <el-select v-model="filterForm.method" placeholder="全部" style="width: 160px">
             <el-option label="全部" value="" />
-            <el-option label="余额" value="balance" />
-            <el-option label="银行卡" value="card" />
-            <el-option label="微信" value="wechat" />
-            <el-option label="支付宝" value="alipay" />
+            <el-option label="充值" value="recharge" />
+            <el-option label="提现" value="withdraw" />
+            <el-option label="停车费" value="parking_fee" />
+            <el-option label="预约费" value="reservation_fee" />
           </el-select>
         </el-form-item>
         <el-form-item label="用户ID">
@@ -73,8 +73,8 @@
     </el-card>
 
     <!-- 交易列表 -->
-    <el-card class="table-card">
-      <el-table :data="transactions" border v-loading="loading">
+    <el-card class="table-card" v-loading="loading">
+      <el-table :data="transactions" border>
         <el-table-column prop="id" label="交易ID" width="100" />
         <el-table-column prop="userName" label="用户" min-width="120" />
         <el-table-column prop="amount" label="金额" width="120">
@@ -95,9 +95,9 @@
               <el-icon><View /></el-icon>
               详情
             </el-button>
-            <el-button type="success" link @click="mockRefund(row)" :disabled="row.status === 'refunded'">
+            <el-button type="success" link @click="doRefund(row)" :disabled="row.status === 'refunded'">
               <el-icon><Refresh /></el-icon>
-              模拟退款
+              退款
             </el-button>
           </template>
         </el-table-column>
@@ -135,8 +135,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { View, Download, Refresh } from '@element-plus/icons-vue'
-import { getAdminPaymentOverview, getAdminTransactions } from '@/api/payments'
+import { View, Download } from '@element-plus/icons-vue'
+import { getAdminPayments } from '@/api/payments'
 
 const loading = ref(false)
 const transactions = ref([])
@@ -167,7 +167,7 @@ const getStatusType = (status) => {
   switch (status) {
     case 'success': return 'success'
     case 'failed': return 'danger'
-    case 'refunded': return 'warning'
+    case 'pending': return 'warning'
     default: return ''
   }
 }
@@ -175,7 +175,7 @@ const getStatusText = (status) => {
   switch (status) {
     case 'success': return '成功'
     case 'failed': return '失败'
-    case 'refunded': return '已退款'
+    case 'pending': return '待处理'
     default: return '未知'
   }
 }
@@ -187,13 +187,17 @@ const formatDateTime = (ts) => {
 
 const loadStats = async () => {
   try {
-    const res = await getAdminPaymentOverview()
-    stats.totalAmount = Number(res?.totalAmount ?? 0)
-    stats.transactionCount = Number(res?.transactionCount ?? 0)
-    stats.successRate = Number(res?.successRate ?? 0)
-    stats.refundAmount = Number(res?.refundAmount ?? 0)
+    const res = await getAdminPayments({ skip: 0, limit: 1000 })
+    const list = Array.isArray(res) ? res : (res?.payments || res?.data || [])
+    const totalAmount = list.reduce((sum, t) => sum + Number(t.amount || 0), 0)
+    const transactionCount = list.length
+    const successCount = list.filter(t => (t.status || '').toLowerCase() === 'success').length
+    const refundAmount = list.filter(t => (t.status || '').toLowerCase() === 'refunded').reduce((sum, t) => sum + Number(t.amount || 0), 0)
+    stats.totalAmount = totalAmount
+    stats.transactionCount = transactionCount
+    stats.successRate = transactionCount ? (successCount * 100 / transactionCount) : 0
+    stats.refundAmount = refundAmount
   } catch (error) {
-    // 概览失败不阻塞页面
   }
 }
 
@@ -212,15 +216,15 @@ const loadTransactions = async () => {
       skip,
       limit
     }
-    const res = await getAdminTransactions(params)
-    const list = Array.isArray(res?.transactions) ? res.transactions : []
+    const res = await getAdminPayments(params)
+    const list = Array.isArray(res) ? res : (res?.payments || res?.data || [])
     transactions.value = list.map(t => ({
       id: t.id,
-      userName: t.user?.username || '-',
-      amount: t.amount ?? 0,
-      method: t.method || '-',
+      userName: (t.user && (t.user.username || t.user.name)) || '-',
+      amount: Number(t.amount ?? 0),
+      method: t.payment_type || t.method || '-',
       status: t.status || 'success',
-      createdAt: t.createdAt || null,
+      createdAt: t.created_at || t.createdAt || null,
       remark: t.remark || ''
     }))
     pagination.total = Number(res?.total ?? list.length)
@@ -253,14 +257,14 @@ const exportData = async () => {
       skip: 0,
       limit: 1000
     }
-    const res = await getAdminTransactions(params)
-    const all = (res?.transactions ?? []).map(t => ({
+    const res = await getAdminPayments(params)
+    const all = (res?.payments ?? res ?? []).map(t => ({
       '交易ID': t.id,
-      '用户': t.user?.username || '-',
-      '金额': `¥${(t.amount ?? 0).toFixed(2)}`,
-      '方式': t.method || '-',
+      '用户': (t.user && (t.user.username || t.user.name)) || '-',
+      '金额': `¥${(Number(t.amount ?? 0)).toFixed(2)}`,
+      '方式': t.payment_type || t.method || '-',
       '状态': getStatusText(t.status || 'success'),
-      '时间': formatDateTime(t.createdAt)
+      '时间': formatDateTime(t.created_at || t.createdAt)
     }))
     // 简单CSV导出
     const headers = Object.keys(all[0] || {})
@@ -283,11 +287,8 @@ const viewDetails = (row) => {
   detailVisible.value = true
 }
 
-// 演示退款（前端标记，不调用后端）
-const mockRefund = (row) => {
-  if (row.status === 'refunded') return
-  row.status = 'refunded'
-  ElMessage.success('已模拟退款（演示）')
+const doRefund = async () => {
+  ElMessage.info('当前后端未提供退款接口')
 }
 
 onMounted(() => {

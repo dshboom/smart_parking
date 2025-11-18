@@ -2,16 +2,24 @@ import request from '@/utils/request'
 
 // Parking Lot APIs
 export function getParkingLots(params) {
+  const q = {}
+  if (params && typeof params === 'object') {
+    if (Number.isFinite(params.skip)) q.skip = Number(params.skip)
+    if (Number.isFinite(params.limit)) q.limit = Number(params.limit)
+    for (const k of Object.keys(params)) {
+      if (!(k in q)) q[k] = params[k]
+    }
+  }
   return request({
-    url: '/api/parking/lots',
+    url: '/api/v1/parking-lots',
     method: 'get',
-    params
+    params: q
   })
 }
 
 export function createParkingLot(data) {
   return request({
-    url: '/api/parking/lots',
+    url: '/api/v1/parking-lots',
     method: 'post',
     data
   })
@@ -19,14 +27,14 @@ export function createParkingLot(data) {
 
 export function getParkingLot(id) {
   return request({
-    url: `/api/parking/lots/${id}`,
+    url: `/api/v1/parking-lots/${id}`,
     method: 'get'
   })
 }
 
 export function updateParkingLot(id, data) {
   return request({
-    url: `/api/parking/lots/${id}`,
+    url: `/api/v1/parking-lots/${id}`,
     method: 'put',
     data
   })
@@ -34,7 +42,7 @@ export function updateParkingLot(id, data) {
 
 export function deleteParkingLot(id) {
   return request({
-    url: `/api/parking/lots/${id}`,
+    url: `/api/v1/parking-lots/${id}`,
     method: 'delete'
   })
 }
@@ -42,7 +50,7 @@ export function deleteParkingLot(id) {
 // Parking Space APIs
 export function getParkingSpaces(parkingLotId, params) {
   return request({
-    url: `/api/parking/lots/${parkingLotId}/spaces`,
+    url: `/api/v1/parking-lots/${parkingLotId}/spaces`,
     method: 'get',
     params
   })
@@ -50,7 +58,7 @@ export function getParkingSpaces(parkingLotId, params) {
 
 export function getParkingSpace(id) {
   return request({
-    url: `/api/parking/spaces/${id}`,
+    url: `/api/v1/parking/spaces/${id}`,
     method: 'get'
   })
 }
@@ -58,7 +66,7 @@ export function getParkingSpace(id) {
 // 更新停车位信息（类型、维护、预约状态等）
 export function updateParkingSpace(id, data) {
   return request({
-    url: `/api/parking/spaces/${id}`,
+    url: `/api/v1/parking/spaces/${id}`,
     method: 'put',
     data
   })
@@ -67,13 +75,13 @@ export function updateParkingSpace(id, data) {
 // 占用停车位
 export function occupyParkingSpace(spaceId, payloadOrVehicleId) {
   const config = {
-    url: `/api/parking/spaces/${spaceId}/occupy`,
-    method: 'post'
+    url: `/api/v1/parking/spaces/${spaceId}/occupy`,
+    method: 'post',
+    suppressErrorToast: true
   }
   if (typeof payloadOrVehicleId === 'number') {
-    config.params = { vehicle_id: payloadOrVehicleId }
+    config.data = { vehicle_id: payloadOrVehicleId }
   } else if (payloadOrVehicleId && typeof payloadOrVehicleId === 'object') {
-    // 支持通过请求体传入 { license_plate } 或 { vehicle_id }
     config.data = payloadOrVehicleId
   }
   return request(config)
@@ -82,7 +90,22 @@ export function occupyParkingSpace(spaceId, payloadOrVehicleId) {
 // 释放停车位
 export function vacateParkingSpace(spaceId) {
   return request({
-    url: `/api/parking/spaces/${spaceId}/vacate`,
+    url: `/api/v1/parking/spaces/${spaceId}/vacate`,
+    method: 'post',
+    data: { exit_time: new Date().toISOString() }
+  })
+}
+
+export function vacateParkingByRecord(recordId) {
+  return request({
+    url: `/api/v1/parking-records/${recordId}/vacate`,
+    method: 'post'
+  })
+}
+
+export function exitAndSettle(recordId) {
+  return request({
+    url: `/api/v1/parking-records/${recordId}/exit-and-settle`,
     method: 'post'
   })
 }
@@ -90,7 +113,7 @@ export function vacateParkingSpace(spaceId) {
 // Navigation APIs
 export function calculateNavigationPath(parkingLotId, start, end) {
   return request({
-    url: `/api/parking/lots/${parkingLotId}/navigate`,
+    url: `/api/v1/parking-lots/${parkingLotId}/navigate`,
     method: 'post',
     data: {
       start: { row: start.row, col: start.col },
@@ -101,64 +124,60 @@ export function calculateNavigationPath(parkingLotId, start, end) {
 
 export function findNearestAvailableSpace(parkingLotId, currentPosition, spaceType) {
   return request({
-    url: `/api/parking/lots/${parkingLotId}/nearest-space`,
+    url: `/api/v1/parking-lots/${parkingLotId}/nearest-space`,
     method: 'post',
     data: {
-      current_position: { row: currentPosition.row, col: currentPosition.col },
-      space_type: spaceType
+      origin: { row: currentPosition.row, col: currentPosition.col },
+      preferred_type: spaceType
     }
   })
 }
 
 // 预留停车位
-export function reserveParkingSpace(spaceId) {
+export function reserveParkingSpace(spaceId, data) {
   return request({
-    url: `/api/parking/spaces/${spaceId}/reserve`,
-    method: 'post'
+    url: `/api/v1/parking/spaces/${spaceId}/reserve`,
+    method: 'post',
+    data
   })
 }
 
 // Statistics APIs
 export function getParkingLotStats(parkingLotId) {
   return request({
-    url: `/api/parking/lots/${parkingLotId}/stats`,
+    url: `/api/v1/parking-lots/${parkingLotId}/stats`,
     method: 'get'
   })
 }
 
 export function getParkingLotLayout(parkingLotId) {
   return request({
-    url: `/api/parking/lots/${parkingLotId}/layout`,
+    url: `/api/v1/parking-lots/${parkingLotId}/layout`,
     method: 'get'
   })
 }
 
 export function updateParkingLotLayout(parkingLotId, layoutData) {
   return request({
-    url: `/api/parking/lots/${parkingLotId}/layout`,
+    url: `/api/v1/parking-lots/${parkingLotId}/layout`,
     method: 'put',
     data: layoutData
   })
 }
 
-export function getRealtimeStatus(parkingLotId) {
-  return request({
-    url: `/api/parking/lots/${parkingLotId}/realtime-status`,
-    method: 'get'
-  })
-}
+// 已移除：实时状态接口（后端端点下线）
 
 // Admin Dashboard APIs
 export function getAdminParkingStats() {
   return request({
-    url: '/api/parking/admin/stats/overview',
+    url: '/api/v1/admin/dashboard/stats',
     method: 'get'
   })
 }
 
 export function getAdminParkingTrends(days = 7) {
   return request({
-    url: '/api/parking/admin/stats/trends',
+    url: '/api/v1/admin/dashboard/stats',
     method: 'get',
     params: { days }
   })
@@ -166,7 +185,7 @@ export function getAdminParkingTrends(days = 7) {
 
 export function getAdminParkingRecords(params) {
   return request({
-    url: '/api/parking/admin/records',
+    url: '/api/v1/admin/parking-records',
     method: 'get',
     params
   })
@@ -174,78 +193,16 @@ export function getAdminParkingRecords(params) {
 
 export function getAdminParkingSpaces(params) {
   return request({
-    url: '/api/parking/admin/spaces',
+    url: '/api/v1/parking-lots',
     method: 'get',
     params
   })
 }
 
-// ===== 我的停车记录专用接口 =====
-
-// 获取我的停车记录列表
-export function getMyParkingRecords(params) {
+export function getAvailableSpaces(parkingLotId) {
   return request({
-    url: '/api/parking/my/records',
+    url: `/api/v1/parking-lots/${parkingLotId}/spaces`,
     method: 'get',
-    params
-  })
-}
-
-// 获取我的停车记录详情
-export function getMyParkingRecord(recordId) {
-  return request({
-    url: `/api/parking/my/records/${recordId}`,
-    method: 'get'
-  })
-}
-
-// 获取当前停车状态
-export function getMyCurrentParking() {
-  return request({
-    url: '/api/parking/my/current',
-    method: 'get'
-  })
-}
-
-// 开始停车（用户手动记录进入）
-export function startMyParking(data) {
-  return request({
-    url: '/api/parking/my/start',
-    method: 'post',
-    data
-  })
-}
-
-// 结束停车（用户手动记录离开）
-export function endMyParking(recordId) {
-  return request({
-    url: '/api/parking/my/end',
-    method: 'post',
-    params: { record_id: recordId }
-  })
-}
-
-// 获取停车费用计算
-export function calculateMyParkingFee(recordId) {
-  return request({
-    url: `/api/parking/my/fee/${recordId}`,
-    method: 'get'
-  })
-}
-
-// 获取停车统计信息
-export function getMyParkingStats() {
-  return request({
-    url: '/api/parking/my/stats',
-    method: 'get'
-  })
-}
-
-// 获取停车趋势数据
-export function getMyParkingTrends(days = 30) {
-  return request({
-    url: '/api/parking/my/trends',
-    method: 'get',
-    params: { days }
+    params: { status_value: 'available' }
   })
 }

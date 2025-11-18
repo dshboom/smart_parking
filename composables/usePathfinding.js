@@ -5,13 +5,13 @@ export function usePathfinding(grid, occupiedSpots, GRID_ROWS, GRID_COLS) {
     return Math.abs(a.row - b.row) + Math.abs(a.col - b.col)
   }
 
-  const getNeighbors = (node) => {
+  const getNeighbors = (node, goal) => {
     const neighbors = []
     const directions = [
-      { row: -1, col: 0 }, // up
-      { row: 1, col: 0 },  // down
-      { row: 0, col: -1 }, // left
-      { row: 0, col: 1 }   // right
+      { row: -1, col: 0 },
+      { row: 1, col: 0 },
+      { row: 0, col: -1 },
+      { row: 0, col: 1 }
     ]
 
     for (const dir of directions) {
@@ -20,14 +20,11 @@ export function usePathfinding(grid, occupiedSpots, GRID_ROWS, GRID_COLS) {
 
       if (newRow >= 0 && newRow < GRID_ROWS && newCol >= 0 && newCol < GRID_COLS) {
         const cellType = grid.value[newRow][newCol]
-        if (cellType !== 'wall') {
-          const key = `${newRow},${newCol}`
-          const isOccupied = occupiedSpots.value.has(key)
-          const isTargetOccupied = occupiedSpots.value.has(`${node.row},${node.col}`)
-          
-          if (!isOccupied || isTargetOccupied) {
-            neighbors.push({ row: newRow, col: newCol })
-          }
+        const isGoal = goal && newRow === goal.row && newCol === goal.col
+        // 仅允许在道路/入口/出口上行走；允许最终一步进入目标车位
+        const walkable = (cellType === 'road' || cellType === 'entrance' || cellType === 'exit') || (isGoal && cellType === 'parking')
+        if (walkable) {
+          neighbors.push({ row: newRow, col: newCol })
         }
       }
     }
@@ -71,7 +68,7 @@ export function usePathfinding(grid, occupiedSpots, GRID_ROWS, GRID_COLS) {
       openSet.splice(currentIndex, 1)
       closedSet.add(getKey(current))
 
-      const neighbors = getNeighbors(current)
+      const neighbors = getNeighbors(current, goal)
       for (const neighbor of neighbors) {
         const neighborKey = getKey(neighbor)
         if (closedSet.has(neighborKey)) continue

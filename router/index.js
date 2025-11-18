@@ -30,6 +30,10 @@ export const constantRoutes = [
     },
     children: [
       {
+        path: '',
+        redirect: '/admin/dashboard'
+      },
+      {
         path: 'dashboard',
         name: 'admin-dashboard',
         component: () => import('../views/DashboardView.vue'),
@@ -58,6 +62,15 @@ export const constantRoutes = [
         }
       },
       {
+        path: 'vehicles',
+        name: 'admin-vehicles',
+        component: () => import('../views/VehicleManagementView.vue'),
+        meta: {
+          permissions: ['vehicle:list'],
+          title: '车辆管理'
+        }
+      },
+      {
         path: 'parking',
         name: 'admin-parking',
         component: () => import('../views/ParkingManagement.vue'),
@@ -66,15 +79,7 @@ export const constantRoutes = [
           title: '停车场管理'
         }
       },
-      {
-        path: 'reservations',
-        name: 'admin-reservations',
-        component: () => import('../views/ReservationManagement.vue'),
-        meta: { 
-          permissions: ['reservation:list'],
-          title: '预约管理'
-        }
-      },
+      
       {
         path: 'payments',
         name: 'admin-payments',

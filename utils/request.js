@@ -34,7 +34,7 @@ function showErrorToast(message) {
 const service = axios.create({
   baseURL: API_CONFIG.baseUrl, // url = base url + request url
   // withCredentials: true, // send cookies when cross-domain requests
-  timeout: 5000 // request timeout
+  timeout: 10000 // request timeout
 })
 
 // request interceptor
@@ -84,17 +84,18 @@ service.interceptors.response.use(
     console.log('err' + error) // for debug
     const status = error?.response?.status
     const requestUrl = error?.config?.url || ''
-    const backendMessage = error?.response?.data?.detail || error?.response?.data?.message
+    const backendDetail = error?.response?.data?.detail
+    const backendMessage = typeof backendDetail === 'string' ? backendDetail : (error?.response?.data?.message)
     const baseMessage = backendMessage || error?.message
-    const errorMessage = baseMessage || mapStatusToMessage(status)
+    const errorMessage = (typeof baseMessage === 'string' && baseMessage.trim().length > 0) ? baseMessage : mapStatusToMessage(status)
     const suppressToast = Boolean(error?.config?.suppressErrorToast)
 
     // 登录过期（401）自动跳转到登录页
     if (status === 401) {
       // 登录接口的401表示账号或密码错误，不提示“已过期”，也不跳转
-      const isLoginEndpoint = requestUrl.includes('/users/token') || requestUrl.endsWith('/token')
+      const isLoginEndpoint = requestUrl.includes('/api/v1/login') || requestUrl.includes('/users/token') || requestUrl.endsWith('/token')
       if (isLoginEndpoint) {
-        showErrorToast(backendMessage || '手机号或密码错误')
+        showErrorToast((typeof backendMessage === 'string' && backendMessage.trim().length > 0) ? backendMessage : '手机号或密码错误')
         return Promise.reject(error)
       }
       // 防抖：避免并发请求触发多次跳转
@@ -110,6 +111,19 @@ service.interceptors.response.use(
             window.__redirectingToLogin = false
           })
         })
+      }
+    } else if (status === 429) {
+      const cfg = error.config || {}
+      const attempt = (cfg.__retryCount || 0) + 1
+      if (attempt <= 2) {
+        const retryAfterHeader = error?.response?.headers?.['retry-after']
+        const baseDelay = retryAfterHeader ? Number(retryAfterHeader) * 1000 : 1000
+        const delayMs = baseDelay * Math.pow(2, attempt - 1)
+        cfg.__retryCount = attempt
+        return new Promise(resolve => setTimeout(resolve, delayMs)).then(() => service(cfg))
+      }
+      if (!suppressToast) {
+        showErrorToast(mapStatusToMessage(429))
       }
     } else {
       // 其他错误：支持按请求配置关闭错误弹窗

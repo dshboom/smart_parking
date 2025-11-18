@@ -32,16 +32,16 @@
           title="入场提示"
           type="info"
           :closable="false"
-          description="请确保车牌号码输入正确，系统将自动记录入场时间并分配停车位"
+          description="确认入场后会跳转至‘寻找车位’页，请先绑定车牌并选择车位，点击‘开始停车’后系统才会记录入场并开始计费"
         />
       </div>
     </div>
     
-    <div class="recent-entries" v-if="recentEntries.length > 0">
+    <div class="recent-entries" v-if="recentRecords.length > 0">
       <h3>最近入场记录</h3>
       <div class="entry-list">
         <div 
-          v-for="entry in recentEntries" 
+          v-for="entry in recentRecords" 
           :key="entry.id"
           class="entry-item"
           @click="selectPlate(entry.license_plate)"
@@ -59,9 +59,9 @@
       <p>请选择已入场车辆进行出场</p>
     </div>
     <div class="exit-form">
-      <div class="in-parking-list" v-if="inParkingVehicles.length">
+      <div class="in-parking-list" v-if="activeRecords.length">
         <div 
-          v-for="v in inParkingVehicles" 
+          v-for="v in activeRecords" 
           :key="v.id" 
           class="vehicle-item"
         >
@@ -73,7 +73,7 @@
             type="danger"
             size="small"
             :loading="exitLoading"
-            @click="handleExitItem(v.license_plate)"
+            @click="handleExitItem(v)"
           >
             确认出场
           </el-button>
@@ -94,9 +94,11 @@
 
 <script>
 import { Right } from '@element-plus/icons-vue'
-import { vehicleExit, getVehiclesInParking, getVehicleCurrentFee } from '@/api/vehicle'
-import { calcParkingFee } from '@/api/pricing'
-import { ElMessageBox } from 'element-plus'
+import { getMyParkingHistory } from '@/api/user'
+import { vacateParkingSpace, getParkingSpaces, exitAndSettle } from '@/api/parking'
+import { settleParkingFee, getMyBalance } from '@/api/payments'
+import { wsManager } from '@/utils/websocket'
+import { getToken } from '@/utils/auth'
 import LicensePlateInput from '@/components/LicensePlateInput.vue'
 
 export default {
@@ -110,78 +112,91 @@ export default {
       entryPlate: '',
       loading: false,
       exitLoading: false,
-      recentEntries: [],
-      inParkingVehicles: []
+      recentRecords: [], // 更改为 recentRecords
+      activeRecords: [], // 更改为 activeRecords
+      wsOffStarted: null,
+      wsOffEnded: null
     }
   },
-  computed: {
-    
+  async mounted() {
+    await this.loadRecords() // 统一调用
+    // 按需建立 WebSocket 连接并订阅用户专属提醒
+    try { if (getToken()) wsManager.connect() } catch (e) {}
+    this.wsOffStarted = wsManager.subscribe('my_parking_started', () => this.loadRecords())
+    this.wsOffEnded = wsManager.subscribe('my_parking_ended', () => this.loadRecords())
   },
-  mounted() {
-    this.loadRecentEntries()
-    this.loadInParkingVehicles()
+  unmounted() {
+    try { if (typeof this.wsOffStarted === 'function') this.wsOffStarted() } catch (e) {}
+    try { if (typeof this.wsOffEnded === 'function') this.wsOffEnded() } catch (e) {}
+  },
+  activated() {
+    // 页面被激活时（例如从其他页面返回），重新加载数据
+    this.loadRecords()
   },
   methods: {
+    async loadRecords() {
+      this.loading = true
+      try {
+        // 并行加载，提升效率
+        const [recentResp, activeResp] = await Promise.all([
+          getMyParkingHistory({ limit: 10 }),
+          getMyParkingHistory({ status: 'active', limit: 50 })
+        ])
+        const recentList = Array.isArray(recentResp?.data) ? recentResp.data : (Array.isArray(recentResp) ? recentResp : [])
+        let activeList = Array.isArray(activeResp?.data) ? activeResp.data : (Array.isArray(activeResp) ? activeResp : [])
+        // 适配字段：为展示与出场操作补充 license_plate 与 space_id
+        // 按停车场分组，查询占用车位并回填 space_id
+        const byLot = new Map()
+        activeList.forEach(r => {
+          const lid = r.parking_lot_id
+          if (!byLot.has(lid)) byLot.set(lid, [])
+          byLot.get(lid).push(r)
+        })
+        const enriched = []
+        for (const [lotId, records] of byLot.entries()) {
+          let spaces = []
+          try {
+            const resp = await getParkingSpaces(lotId, { status_value: 'occupied' })
+            spaces = Array.isArray(resp) ? resp : (Array.isArray(resp?.items) ? resp.items : [])
+          } catch (e) {
+            spaces = []
+          }
+          const spaceByVehicle = new Map(spaces.map(s => [s.vehicle_id, s]))
+          records.forEach(r => {
+            const s = spaceByVehicle.get(r.vehicle_id)
+            enriched.push({
+              ...r,
+              license_plate: r.license_plate_snapshot,
+              space_id: s?.id || null
+            })
+          })
+        }
+        this.recentRecords = recentList.map(r => ({
+          ...r,
+          license_plate: r.license_plate_snapshot
+        }))
+        this.activeRecords = enriched
+      } catch (error) {
+        console.error('加载停车记录失败:', error)
+        this.$message.error('加载停车记录失败，请稍后重试')
+      } finally {
+        this.loading = false
+      }
+    },
     async handleEntry() {
       if (!this.$refs.entryPlateInput?.validate()) {
         this.$message.warning('请输入正确的车牌号码')
         return
       }
-      
+      const plate = this.entryPlate.replace(/[•·.]/g, '')
       this.loading = true
       try {
-        // 入场API调用
-        const resp = await this.$store.dispatch('vehicle/entry', {
-          license_plate: this.entryPlate.replace(/[•·.]/g, '')
-        })
-        
-        // 后端确认入场成功后，自动跳转到“寻找”页面，并传递车牌与车辆ID
-        const plate = resp?.vehicle?.license_plate || this.entryPlate
-        const vehicleId = resp?.vehicle?.id
-        this.$message.success(`车辆 ${plate} 入场成功！`)
+        this.$message.success(`车牌 ${plate} 已确认，请选择车位开始计费`)
         this.entryPlate = ''
-        this.loadRecentEntries()
-        this.loadInParkingVehicles()
-
-        // 入场后优先调用后端实时计费接口，失败则回退到前端计费API
-        try {
-          const feeResp = await getVehicleCurrentFee(plate)
-          const entryTime = feeResp?.entry_time ? new Date(feeResp.entry_time) : new Date()
-          const durationHours = Number(feeResp?.duration_hours ?? 0)
-          const fee = Number(feeResp?.fee ?? 0).toFixed(2)
-          const title = '停车费用估算'
-          const message = `入场时间：${entryTime.toLocaleString()}` +
-                          `\n当前时长：${durationHours.toFixed(2)} 小时` +
-                          `\n预计费用：¥${fee}`
-          await ElMessageBox.alert(message, title, { confirmButtonText: '继续导航' })
-        } catch (_) {
-          try {
-            const entryTimeStr = resp?.vehicle?.entry_time
-            const entryTime = entryTimeStr ? new Date(entryTimeStr) : new Date()
-            const now = new Date()
-            const durationHours = Math.max((now - entryTime) / 3600000, 0)
-            const feeResp2 = await calcParkingFee(durationHours)
-            const fee2 = Number(feeResp2?.fee || 0).toFixed(2)
-            const title2 = '停车费用估算'
-            const message2 = `入场时间：${entryTime.toLocaleString()}` +
-                             `\n当前时长：${durationHours.toFixed(2)} 小时` +
-                             `\n预计费用：¥${fee2}`
-            await ElMessageBox.alert(message2, title2, { confirmButtonText: '继续导航' })
-          } catch (e) {
-            console.warn('费用计算失败：', e)
-          }
-        }
-
-        // 跳转并触发自动导航（通过路由参数传递标记与车辆信息）
         const query = { autoNav: '1', plate }
-        if (vehicleId) query.vehicleId = String(vehicleId)
         this.$router.push({ name: 'MobileFind', query })
       } catch (error) {
-        if (error?.response?.status === 422) {
-          this.$message.error('车牌不合法，请重新输入')
-        } else {
-          this.$message.error(error?.response?.data?.detail || error.message || '入场失败，请重试')
-        }
+        this.$message.error(error?.response?.data?.detail || error.message || '入场流程异常，请重试')
       } finally {
         this.loading = false
       }
@@ -189,24 +204,6 @@ export default {
     
     selectPlate(plateNumber) {
       this.entryPlate = plateNumber
-    },
-    
-    async loadRecentEntries() {
-      try {
-        // 模拟获取最近入场记录
-        const response = await this.$store.dispatch('vehicle/getRecentEntries')
-        this.recentEntries = response?.data || []
-      } catch (error) {
-        console.error('加载最近入场记录失败:', error)
-      }
-    },
-    async loadInParkingVehicles() {
-      try {
-        const resp = await getVehiclesInParking()
-        this.inParkingVehicles = Array.isArray(resp) ? resp : (resp?.items || [])
-      } catch (error) {
-        console.error('加载入场车辆失败:', error)
-      }
     },
     
     formatTime(timestamp) {
@@ -224,13 +221,18 @@ export default {
         return date.toLocaleDateString()
       }
     },
-    async handleExitItem(licensePlate) {
+    async handleExitItem(record) {
       this.exitLoading = true
       try {
-        const resp = await vehicleExit({ license_plate: licensePlate })
-        const msg = resp?.message || `车辆 ${licensePlate} 出场成功！`
-        this.$message.success(msg)
-        this.loadInParkingVehicles()
+        const resp = await exitAndSettle(record.id)
+        if (resp?.detail && resp.detail.includes('余额不足')) {
+          this.$message.warning('余额不足或结算失败，请在支付页完成支付')
+        } else {
+          const bal = await getMyBalance()
+          const amt = Number(resp?.amount || 0)
+          this.$message.success(`车辆 ${record?.license_plate || ''} 已结算 ¥${amt.toFixed(2)}，余额 ¥${Number(bal?.balance || 0).toFixed(2)}`)
+        }
+        await this.loadRecords()
       } catch (error) {
         this.$message.error(error.response?.data?.detail || '出场失败，请重试')
       } finally {

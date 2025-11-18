@@ -16,7 +16,7 @@ router.beforeEach(async(to, from, next) => {
       await store.dispatch('user/getInfo')
       const userRole = store.state.user.status
       if (userRole === 'admin') {
-        next('/admin/users')
+        next('/admin/dashboard')
       } else {
         next('/mobile/entry')
       }

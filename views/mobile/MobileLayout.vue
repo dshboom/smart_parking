@@ -125,7 +125,7 @@ export default {
   
   .main-content {
     min-height: 100%;
-    padding-bottom: 60px; // 为底部导航留出空间
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); // 为底部导航留出空间
   }
   
   &::-webkit-scrollbar {

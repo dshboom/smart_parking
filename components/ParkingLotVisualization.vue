@@ -9,6 +9,7 @@
       :path="path"
       @find-nearest-empty-spot="findNearestEmptySpot"
       @reset-layout="resetLayout"
+      @save-layout="saveLayout"
       @save-selected-spot-attributes="saveSelectedSpotAttributes"
     />
 
@@ -144,6 +145,7 @@ export default {
       occupied_spaces: 0,
       available_spaces: 0
     })
+    const layoutDirty = ref(false)
 
     // WebSocket 事件取消订阅引用
     let offMessage = null
@@ -187,8 +189,8 @@ export default {
 
         parkingLot.value = lotResponse
         
-        if (layoutResponse.layout_data && layoutResponse.layout_data.grid) {
-          grid.value = layoutResponse.layout_data.grid
+        if (Array.isArray(layoutResponse?.grid)) {
+          grid.value = layoutResponse.grid
         }
 
         // Read entrance/exit from backend if provided
@@ -211,17 +213,25 @@ export default {
 
         // Load all spaces to build id->coord map and occupied set
         const spacesResponse = await parkingApi.getParkingSpaces(props.parkingLotId)
+        const spaces = Array.isArray(spacesResponse) ? spacesResponse : (Array.isArray(spacesResponse?.items) ? spacesResponse.items : [])
+        const adapted = spaces.map(space => ({
+          ...space,
+          is_reserved: space.status === 'reserved',
+          is_under_maintenance: space.status === 'maintenance'
+        }))
         spaceIdToCoord.value = new Map(
-          (spacesResponse || []).map(space => [space.id, { row: space.row, col: space.col }])
+          adapted.map(space => [space.id, { row: space.row, col: space.col }])
         )
         coordToSpace.value = new Map(
-          (spacesResponse || []).map(space => [`${space.row},${space.col}`, space])
+          adapted.map(space => [`${space.row},${space.col}`, space])
         )
         occupiedSpots.value = new Set(
-          (spacesResponse || [])
-            .filter(space => space.is_occupied)
+          adapted
+            .filter(space => String(space.status).toLowerCase() === 'occupied')
             .map(space => `${space.row},${space.col}`)
         )
+
+        // initial highlight handled by computed highlightCoord
 
         // Update stats
         stats.total_spaces = statsResponse.total_spaces
@@ -233,6 +243,11 @@ export default {
         console.error('Error loading parking lot data:', error)
       }
     }
+
+    // Sync external path from props (used by user navigation pages)
+    watch(() => props.showPath, (val) => {
+      path.value = Array.isArray(val) ? val : []
+    }, { immediate: true })
 
     const findNearestEmptySpot = async () => {
       if (!props.parkingLotId) return
@@ -251,15 +266,32 @@ export default {
           start,
           spaceType
         )
-        
-        if (result && result.space && result.navigation_path) {
-          path.value = result.navigation_path.path
-          selectedSpot.value = result.space
-          ElMessage.success(`找到最近停车位: ${result.space.id}, 距离: ${result.navigation_path.distance}米`)
+        const target = result && result.space_id ? { row: result.row, col: result.col } : null
+        if (target) {
+          // 后端导航
+          let nav = null
+          try {
+            nav = await parkingApi.calculateNavigationPath(props.parkingLotId, start, target)
+          } catch (_) {}
+          let navPath = Array.isArray(nav?.path) ? nav.path : []
+          const pathCellsValid = (nodes) => nodes && nodes.every((n, idx) => {
+            const t = grid.value[n.row]?.[n.col]
+            if (idx === nodes.length - 1) return t === 'parking'
+            return t === 'road' || t === 'entrance' || t === 'exit'
+          })
+          if (!pathCellsValid(navPath) || navPath.length === 0) {
+            const local = astar(start, target)
+            navPath = Array.isArray(local) ? local : []
+          }
+          path.value = navPath
+          // 选中目标车位
+          const space = coordToSpace.value.get(`${target.row},${target.col}`)
+          selectedSpot.value = space || null
+          ElMessage.success(`找到最近停车位: #${result.space_id}`)
         } else {
           path.value = []
           selectedSpot.value = null
-          ElMessage.warning('未找到可用停车位')
+          ElMessage.warning('未找到可用车位')
         }
       } catch (error) {
         console.error('Error finding nearest space:', error)
@@ -308,34 +340,21 @@ export default {
               }
             }
           }
+          if (selectedTool.value === 'entrance') {
+            entrancePosition.value = { row, col }
+          } else {
+            exitPosition.value = { row, col }
+          }
         }
         grid.value[row][col] = selectedTool.value
         // 若选择的是停车位，选中该位置用于右侧属性编辑
         if (selectedTool.value === 'parking') {
           const space = coordToSpace.value.get(key)
-          if (space) {
-            selectedSpot.value = space
-          } else {
-            // 尝试按坐标查询车位
-            try {
-              const spacesResponse = await parkingApi.getParkingSpaces(props.parkingLotId, { row, col })
-              if (spacesResponse && spacesResponse.length > 0) {
-                selectedSpot.value = spacesResponse[0]
-                coordToSpace.value.set(key, spacesResponse[0])
-              }
-            } catch (_) {}
-          }
+          selectedSpot.value = space || null
         }
         
         // 保存布局到后端
-        try {
-          await parkingApi.updateParkingLotLayout(props.parkingLotId, {
-            grid: grid.value
-          })
-          ElMessage.success('布局更新成功')
-        } catch (error) {
-          ElMessage.error('布局更新失败')
-        }
+        layoutDirty.value = true
       } else {
         // 正常模式
         // 只读模式：在启用选择模式时允许点选空闲车位；同时保留对已占用车位的“到出口”导航
@@ -362,34 +381,14 @@ export default {
         }
         if (cellType === 'parking') {
           if (occupiedSpots.value.has(key)) {
-            // 如果停车位被占用，显示到出口的路径
             findExitPath({ row, col })
           } else {
-            // 如果处于选择模式，则向外发射事件而不是直接占用
-            if (props.selectMode) {
-              // 使用坐标到车位的本地映射，避免错误过滤
-              const space = coordToSpace.value.get(key)
-              if (space) {
-                selectedSpot.value = space
-                emit('space-selected', space)
-              } else {
-                ElMessage.warning('该位置无车位或布局未同步')
-              }
+            const space = coordToSpace.value.get(key)
+            if (space) {
+              selectedSpot.value = space
+              emit('space-selected', space)
             } else {
-              // 如果停车位空着，占用它（组件独立使用场景）
-              try {
-                const space = coordToSpace.value.get(key)
-                if (!space) {
-                  ElMessage.warning('该位置无车位或布局未同步')
-                  return
-                }
-                await parkingApi.occupyParkingSpace(space.id, 1) // 假设vehicle_id为1
-                occupiedSpots.value.add(key)
-                ElMessage.success('停车位占用成功')
-              } catch (error) {
-                const msg = error?.response?.data?.detail || '占用停车位失败'
-                ElMessage.error(msg)
-              }
+              ElMessage.warning('该位置无车位或布局未同步')
             }
           }
         }
@@ -418,7 +417,11 @@ export default {
       try {
         initGrid()
         await parkingApi.updateParkingLotLayout(props.parkingLotId, {
-          grid: grid.value
+          rows: GRID_ROWS,
+          cols: GRID_COLS,
+          grid: grid.value,
+          entrance_position: { row: 0, col: 0 },
+          exit_position: { row: GRID_ROWS - 1, col: GRID_COLS - 1 }
         })
         ElMessage.success('布局重置成功')
       } catch (error) {
@@ -426,12 +429,35 @@ export default {
       }
     }
 
+    const saveLayout = async () => {
+      try {
+        await parkingApi.updateParkingLotLayout(props.parkingLotId, {
+          rows: grid.value.length,
+          cols: grid.value[0]?.length || GRID_COLS,
+          grid: grid.value,
+          entrance_position: entrancePosition.value || { row: 0, col: 0 },
+          exit_position: exitPosition.value || detectExitFromGrid() || { row: GRID_ROWS - 1, col: GRID_COLS - 1 }
+        })
+        layoutDirty.value = false
+        ElMessage.success('布局已保存')
+      } catch (error) {
+        ElMessage.error('布局保存失败')
+      }
+    }
+
     const saveSelectedSpotAttributes = async () => {
       if (!selectedSpot.value) return
       try {
-        const payload = {
-          space_type: selectedSpot.value.space_type || 'standard',
-          is_under_maintenance: !!selectedSpot.value.is_under_maintenance
+        const payload = {}
+        if (selectedSpot.value.space_type) {
+          payload.space_type = selectedSpot.value.space_type
+        }
+        // 维护状态映射到后端 status 字段
+        if (selectedSpot.value.is_under_maintenance) {
+          payload.status = 'maintenance'
+        } else {
+          // 若取消维护，设置为 available（不影响占用/预约，由后端/WS驱动）
+          payload.status = 'available'
         }
         const updated = await parkingApi.updateParkingSpace(selectedSpot.value.id, payload)
         // 更新本地缓存
@@ -523,46 +549,43 @@ export default {
     const handleWebSocketMessage = (message) => {
       try {
         if (!message || typeof message !== 'object') return
-
-        if (message.event === 'space_occupied') {
-          const coord = spaceIdToCoord.value.get(message.space_id)
+        const eventType = message.event || message.type
+        const payload = message.payload || message
+        if (eventType === 'space_occupied') {
+          const coord = spaceIdToCoord.value.get(payload.space_id)
           if (coord) {
             occupiedSpots.value.add(`${coord.row},${coord.col}`)
-            // 触发响应式更新
             occupiedSpots.value = new Set(occupiedSpots.value)
             stats.occupied_spaces++
             stats.available_spaces--
           }
-        } else if (message.event === 'space_vacated') {
-          const coord = spaceIdToCoord.value.get(message.space_id)
+        } else if (eventType === 'space_vacated') {
+          const coord = spaceIdToCoord.value.get(payload.space_id)
           if (coord) {
             occupiedSpots.value.delete(`${coord.row},${coord.col}`)
-            // 触发响应式更新
             occupiedSpots.value = new Set(occupiedSpots.value)
             stats.occupied_spaces--
             stats.available_spaces++
           }
-        } else if (message.event === 'space_reserved') {
-          const coord = spaceIdToCoord.value.get(message.space_id)
+        } else if (eventType === 'space_reserved') {
+          const coord = spaceIdToCoord.value.get(payload.space_id)
           if (coord) {
             const key = `${coord.row},${coord.col}`
             const space = coordToSpace.value.get(key)
             if (space) {
               const updated = { ...space, is_reserved: true }
               coordToSpace.value.set(key, updated)
-              // 触发响应式更新
               coordToSpace.value = new Map(coordToSpace.value)
             }
           }
-        } else if (message.event === 'space_unreserved') {
-          const coord = spaceIdToCoord.value.get(message.space_id)
+        } else if (eventType === 'space_unreserved') {
+          const coord = spaceIdToCoord.value.get(payload.space_id)
           if (coord) {
             const key = `${coord.row},${coord.col}`
             const space = coordToSpace.value.get(key)
             if (space) {
               const updated = { ...space, is_reserved: false }
               coordToSpace.value.set(key, updated)
-              // 触发响应式更新
               coordToSpace.value = new Map(coordToSpace.value)
             }
           }
@@ -575,16 +598,22 @@ export default {
     // Lifecycle
     onMounted(() => {
       loadParkingLotData()
-      // 订阅全局 WebSocket 消息，并确保连接已建立
       offMessage = wsManager.on('message', handleWebSocketMessage)
       wsManager.connect()
+      wsManager.on('connected', () => {
+        try {
+          wsManager.send({ type: 'subscribe_lot', payload: { lot_id: props.parkingLotId } })
+        } catch (_) {}
+      })
     })
 
     onBeforeUnmount(() => {
-      // 仅取消当前组件的消息处理，保持全局连接不被关闭
       if (typeof offMessage === 'function') {
         offMessage()
       }
+      try {
+        wsManager.send({ type: 'unsubscribe_lot', payload: { lot_id: props.parkingLotId } })
+      } catch (_) {}
     })
 
     return {
@@ -598,6 +627,7 @@ export default {
       selectedTool,
       selectedSpot,
       stats,
+      layoutDirty,
       highlightCoord,
       
       // Constants
@@ -612,6 +642,7 @@ export default {
       toggleEditMode,
       findNearestEmptySpot,
       resetLayout,
+      saveLayout,
       saveSelectedSpotAttributes,
       isInPath,
       getCellClasses,
@@ -702,11 +733,23 @@ export default {
   margin-bottom: 20px;
 }
 
+:deep(.el-card) {
+  width: 100%;
+}
+
+:deep(.el-card__body) {
+  overflow: visible;
+}
+
 .grid-container {
   background: #e4e7ed;
   padding: 10px;
   border-radius: 4px;
   margin: 0 auto;
+}
+
+.grid-wrapper {
+  min-height: 200px;
 }
 
 .grid-cell {

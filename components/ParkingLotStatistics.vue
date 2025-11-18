@@ -117,6 +117,8 @@ export default {
     let statusChart = null
     let typeChart = null
     let trendChart = null
+    let ro = null
+    let initialized = false
 
     const statistics = ref({
       total_spaces: 0,
@@ -386,44 +388,45 @@ export default {
     }
 
     // Lifecycle
+    const tryInitCharts = () => {
+      if (initialized) return
+      const sEl = statusChartRef.value
+      const tEl = typeChartRef.value
+      const trEl = trendChartRef.value
+      if (!sEl || !tEl || !trEl) return
+      const ok = (el) => {
+        const rect = el.getBoundingClientRect()
+        return rect.width > 0 && rect.height > 0
+      }
+      if (ok(sEl) && ok(tEl) && ok(trEl)) {
+        try {
+          statusChart = echarts.init(sEl)
+          typeChart = echarts.init(tEl)
+          trendChart = echarts.init(trEl)
+          initialized = true
+          loadStatistics()
+          window.addEventListener('resize', handleResize, { passive: true })
+          if (ro) ro.disconnect()
+        } catch (error) {
+          console.error('Error initializing charts:', error)
+        }
+      }
+    }
+
     onMounted(() => {
-      // Use nextTick to ensure DOM is fully updated
       nextTick(() => {
-        // Initialize charts with a delay to ensure DOM is fully ready
-        setTimeout(() => {
-          // Double-check DOM elements exist before initializing
-          if (statusChartRef.value && typeChartRef.value && trendChartRef.value) {
-            try {
-              statusChart = echarts.init(statusChartRef.value)
-              typeChart = echarts.init(typeChartRef.value)
-              trendChart = echarts.init(trendChartRef.value)
-
-              // Load data after charts are initialized
-              loadStatistics()
-
-              // Add resize listener with passive option to improve performance
-              window.addEventListener('resize', handleResize, { passive: true })
-            } catch (error) {
-              console.error('Error initializing charts:', error)
-            }
-          } else {
-            console.warn('Chart DOM elements not ready, retrying...')
-            // Retry initialization after another delay
-            setTimeout(() => {
-              if (statusChartRef.value && typeChartRef.value && trendChartRef.value) {
-                try {
-                  statusChart = echarts.init(statusChartRef.value)
-                  typeChart = echarts.init(typeChartRef.value)
-                  trendChart = echarts.init(trendChartRef.value)
-                  loadStatistics()
-                  window.addEventListener('resize', handleResize, { passive: true })
-                } catch (error) {
-                  console.error('Error initializing charts on retry:', error)
-                }
-              }
-            }, 500)
-          }
-        }, 200)
+        // Use ResizeObserver to initialize when container becomes visible and sized
+        tryInitCharts()
+        try {
+          ro = new ResizeObserver(() => tryInitCharts())
+          if (statusChartRef.value) ro.observe(statusChartRef.value)
+          if (typeChartRef.value) ro.observe(typeChartRef.value)
+          if (trendChartRef.value) ro.observe(trendChartRef.value)
+        } catch (e) {
+          // Fallback: timed retries
+          setTimeout(tryInitCharts, 300)
+          setTimeout(tryInitCharts, 800)
+        }
       })
     })
 
@@ -435,6 +438,7 @@ export default {
       
       // Remove resize listener
       window.removeEventListener('resize', handleResize, { passive: true })
+      try { ro && ro.disconnect() } catch (_) {}
     })
 
     // Watch for parking lot ID changes

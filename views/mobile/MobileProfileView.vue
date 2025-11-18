@@ -32,15 +32,7 @@
       <div class="menu-section">
         <h4>我的服务</h4>
         <div class="menu-items">
-          <div class="menu-item" @click="goToReservations">
-            <div class="menu-icon">
-              <el-icon><Calendar /></el-icon>
-            </div>
-            <div class="menu-content">
-              <span>我的预约</span>
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
+          
         </div>
       </div>
       
@@ -53,15 +45,6 @@
             </div>
             <div class="menu-content">
               <span>支付设置</span>
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
-          <div class="menu-item" @click="goToHelp">
-            <div class="menu-icon">
-              <el-icon><QuestionFilled /></el-icon>
-            </div>
-            <div class="menu-content">
-              <span>帮助中心</span>
               <el-icon><ArrowRight /></el-icon>
             </div>
           </div>
@@ -87,15 +70,15 @@
 
 <script>
 import { 
-  User, ArrowRight, Calendar,
-  Wallet, QuestionFilled, SwitchButton 
+  User, ArrowRight,
+  Wallet, SwitchButton
 } from '@element-plus/icons-vue'
 
 export default {
   name: 'MobileProfileView',
   components: {
-    User, ArrowRight, Calendar,
-    Wallet, QuestionFilled, SwitchButton
+    User, ArrowRight,
+    Wallet, SwitchButton
   },
   data() {
     return {
@@ -140,17 +123,13 @@ export default {
     
     // 已移除VIP等级展示逻辑
     
-    goToReservations() {
-      this.$router.push('/mobile/reservations')
-    },
+    
+    
     
     goToPayment() {
       this.$router.push('/mobile/payment')
     },
     
-    goToHelp() {
-      this.$router.push('/mobile/help')
-    },
     
     handleLogout() {
       this.$confirm('确定要退出登录吗？', '提示', {

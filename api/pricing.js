@@ -26,3 +26,27 @@ export function calcParkingFeeAdvanced(params) {
     data: params
   })
 }
+
+// ===== 计费规则（与后端 /api/v1/parking-lots/{id}/billing-rule 对齐） =====
+export function getBillingRule(lotId) {
+  return request({
+    url: `/api/v1/parking-lots/${lotId}/billing-rule`,
+    method: 'get'
+  })
+}
+
+export function createBillingRule(lotId, data) {
+  return request({
+    url: `/api/v1/parking-lots/${lotId}/billing-rule`,
+    method: 'post',
+    data
+  })
+}
+
+export function updateBillingRule(lotId, data) {
+  return request({
+    url: `/api/v1/parking-lots/${lotId}/billing-rule`,
+    method: 'put',
+    data
+  })
+}

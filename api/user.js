@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import { adaptUserData, adaptPaginatedResponse } from './adapters'
 
 export function login(data) {
   // Use URL-encoded body to match OAuth2PasswordRequestForm expectations
@@ -7,7 +8,7 @@ export function login(data) {
   params.append('password', data.password)
 
   return request({
-    url: '/users/token',
+    url: '/api/v1/login',
     method: 'post',
     data: params,
     headers: {
@@ -18,32 +19,58 @@ export function login(data) {
 
 export function getInfo(token) {
   return request({
-    url: '/users/me',
+    url: '/api/v1/users/me',
     method: 'get'
+  }).then(response => {
+    // 适配用户数据格式
+    if (response.data) {
+      response.data = adaptUserData(response.data)
+    }
+    return response
   })
 }
 
 export function updateMe(data) {
   return request({
-    url: '/users/me',
-    method: 'put',
+    url: '/api/v1/users/me',
+    method: 'patch',
     data
+  }).then(response => {
+    // 适配用户数据格式
+    if (response.data) {
+      response.data = adaptUserData(response.data)
+    }
+    return response
   })
 }
 
 export function logout() {
   return request({
-    url: '/users/logout',
+    url: '/api/v1/logout',
     method: 'post'
+  })
+}
+
+// 修改密码
+export function changePassword(data) {
+  return request({
+    url: '/api/v1/users/me/change-password',
+    method: 'post',
+    data
   })
 }
 
 // 当前用户统计
 export function getMyStats() {
   return request({
-    url: '/users/me/stats',
-    method: 'get'
-  })
+    url: '/api/v1/users/me/stats',
+    method: 'get',
+    suppressErrorToast: true
+  }).catch(() => ({
+    totalParkings: 0,
+    totalHours: 0,
+    totalAmount: 0
+  }))
 }
 
 // 当前用户停车历史（支持筛选与分页）
@@ -71,7 +98,7 @@ export function getMyParkingHistory(params = {}) {
   if (max_fee != null) query.max_fee = max_fee
 
   return request({
-    url: '/users/me/parking-history',
+    url: '/api/v1/parking-records/me',
     method: 'get',
     params: query
   })
@@ -81,7 +108,7 @@ export function getMyParkingHistory(params = {}) {
 
 export function fetchList(query) {
   return request({
-    url: '/users/',
+    url: '/api/v1/admin/users',
     method: 'get',
     params: query
   })
@@ -89,11 +116,13 @@ export function fetchList(query) {
 
 export function register(data) {
   return request({
-    url: '/users/',
+    url: '/api/v1/register',
     method: 'post',
     data: {
       username: data.username,
-      phone: data.phone,
+      phone_number: data.phone,
+      email: data.email,
+      nickname: data.nickname,
       password: data.password
     },
     headers: {
@@ -104,9 +133,33 @@ export function register(data) {
 
 export function updateUserStatus(id, status) {
   return request({
-    url: `/users/${id}/status`,
+    url: `/api/v1/admin/users/${id}/status`,
     method: 'put',
-    data: { status }
+    params: { status }
+  })
+}
+
+export function updateUser(id, data) {
+  const payload = {}
+  if (data.username) payload.username = data.username
+  if (data.email) payload.email = data.email
+  if (data.nickname) payload.nickname = data.nickname
+  if (data.role) payload.role = data.role
+  if (data.status) payload.status = data.status === 'blocked' ? 'suspended' : data.status
+  if (data.new_password) payload.new_password = data.new_password
+  if (data.locked !== undefined) payload.locked = data.locked
+
+  return request({
+    url: `/api/v1/admin/users/${id}`,
+    method: 'patch',
+    data: payload
+  })
+}
+
+export function getUserDetail(userId) {
+  return request({
+    url: `/api/v1/admin/users/${userId}`,
+    method: 'get'
   })
 }
 
@@ -141,24 +194,36 @@ export function getUserByLicensePlate(licensePlate) {
 }
 
 // ===== 我的车辆（当前用户） =====
-export function getMyVehicles() {
+export function getMyVehicles(options = {}) {
   return request({
-    url: '/users/me/vehicles',
-    method: 'get'
+    url: '/api/v1/vehicles/me',
+    method: 'get',
+    ...options
   })
+}
+
+export function getVehicles(params) {
+  return getMyVehicles(params)
 }
 
 export function addMyVehicle(data) {
   return request({
-    url: '/users/me/vehicles',
+    url: '/api/v1/vehicles',
     method: 'post',
     data
   })
 }
 
-export function removeMyVehicle(licensePlate) {
+export function setDefaultVehicle(vehicleId) {
   return request({
-    url: `/users/me/vehicles/${licensePlate}`,
+    url: `/api/v1/vehicles/${vehicleId}/default`,
+    method: 'put'
+  })
+}
+
+export function removeMyVehicle(vehicleId) {
+  return request({
+    url: `/api/v1/vehicles/${vehicleId}`,
     method: 'delete'
   })
 }

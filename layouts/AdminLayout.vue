@@ -56,13 +56,7 @@
               </template>
             </el-menu-item>
             
-            <el-menu-item index="/admin/reservations" class="modern-menu-item">
-              <el-icon><Timer /></el-icon>
-              <template #title>
-                <span class="menu-title">预约管理</span>
-                <span class="menu-subtitle">Reservation</span>
-              </template>
-            </el-menu-item>
+            
             
             <el-menu-item index="/admin/payments" class="modern-menu-item">
               <el-icon><Wallet /></el-icon>
@@ -155,7 +149,6 @@ import {
   ArrowDown,
   OfficeBuilding,
   Setting,
-  Timer,
   Bell,
   SwitchButton,
   Wallet
@@ -192,7 +185,6 @@ export default {
         '/admin/users': '用户管理',
         '/admin/records': '进出记录',
         '/admin/parking': '停车场管理',
-        '/admin/reservations': '预约管理',
         '/admin/payments': '支付管理',
         '/admin/settings': '系统设置'
       }

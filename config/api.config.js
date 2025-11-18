@@ -5,7 +5,7 @@ const getApiBaseUrl = () => {
   
   // 如果是本地开发环境
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return `${protocol}//localhost:8000`;
+    return `${protocol}//localhost:8080`;
   }
   
   // 如果是前端穿透域名，使用后端的穿透域名
@@ -13,8 +13,8 @@ const getApiBaseUrl = () => {
     return `${protocol}//mypcapi.hyan5216.pics`;
   }
   
-  // 默认返回本地地址
-  return `${protocol}//localhost:8001`;
+  // 默认统一到后端 8080 端口
+  return `${protocol}//localhost:8080`;
 };
 
 const getWebSocketUrl = () => {
@@ -23,7 +23,7 @@ const getWebSocketUrl = () => {
   
   // 如果是本地开发环境
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return `${protocol}//localhost:8000/ws`;
+    return `${protocol}//localhost:8080/ws`;
   }
   
   // 如果是前端穿透域名，使用后端的穿透域名
@@ -31,8 +31,8 @@ const getWebSocketUrl = () => {
     return `${protocol}//mypcapi.hyan5216.pics/ws`;
   }
   
-  // 默认返回本地地址
-  return `${protocol}//localhost:8001/ws`;
+  // 默认统一到后端 8080 端口
+  return `${protocol}//localhost:8080/ws`;
 };
 
 export const API_CONFIG = {

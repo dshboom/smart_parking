@@ -1,5 +1,5 @@
 <template>
-  <div class="grid-container" :style="gridStyle">
+  <div class="grid-container" :style="gridStyle" ref="containerRef">
     <div
       v-for="(cell, index) in flattenedGrid"
       :key="index"
@@ -23,7 +23,7 @@
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
 
 export default {
   name: 'ParkingGrid',
@@ -59,6 +59,9 @@ export default {
   },
   emits: ['cell-click', 'cell-hover'],
   setup(props, { emit }) {
+    const containerRef = ref(null)
+    const containerHeight = ref(0)
+    const containerWidth = ref(0)
     const flattenedGrid = computed(() => {
       const result = []
       for (let row = 0; row < props.grid.length; row++) {
@@ -86,8 +89,53 @@ export default {
       gap: '2px',
       width: '100%',
       maxWidth: '800px',
-      aspectRatio: `${props.GRID_COLS} / ${props.GRID_ROWS}`
+      height: containerHeight.value > 0 ? `${containerHeight.value}px` : 'auto'
     }))
+
+    const cellWidth = computed(() => (containerWidth.value > 0 ? containerWidth.value / props.GRID_COLS : 0))
+    const cellHeight = computed(() => (containerHeight.value > 0 ? containerHeight.value / props.GRID_ROWS : 0))
+    const pathPoints = computed(() => {
+      if (!Array.isArray(props.path)) return []
+      const pts = []
+      for (const p of props.path) {
+        const x = p.col * cellWidth.value + cellWidth.value / 2
+        const y = p.row * cellHeight.value + cellHeight.value / 2
+        pts.push({ x, y })
+      }
+      return pts
+    })
+    const pointsString = computed(() => pathPoints.value.map(p => `${p.x},${p.y}`).join(' '))
+
+    // path traveler animation removed; using per-cell dot indicators
+
+    let ro = null
+    const measure = () => {
+      const el = containerRef.value
+      if (!el) return
+      const w = el.clientWidth
+      if (w > 0) {
+        containerWidth.value = w
+        containerHeight.value = Math.round(w * (props.GRID_ROWS / props.GRID_COLS))
+      }
+    }
+
+    onMounted(() => {
+      measure()
+      try {
+        ro = new ResizeObserver(() => measure())
+        if (containerRef.value) ro.observe(containerRef.value)
+      } catch (_) {
+        // Fallback
+        setTimeout(measure, 300)
+        setTimeout(measure, 800)
+      }
+    })
+
+    onBeforeUnmount(() => {
+      try { ro && ro.disconnect() } catch (_) {}
+    })
+
+    watch(() => props.grid, () => measure(), { deep: true })
 
     const getTooltipContent = (cell) => {
       const key = `${cell.row},${cell.col}`
@@ -123,13 +171,16 @@ export default {
     }
 
     return {
+      containerRef,
+      containerWidth,
       flattenedGrid,
       gridStyle,
       getTooltipContent,
       getCellClasses,
       isInPath,
       handleCellClick,
-      handleCellHover
+      handleCellHover,
+      containerHeight
     }
   }
 }
@@ -137,25 +188,29 @@ export default {
 
 <style scoped>
 .grid-container {
-  background-color: #f0f2f5;
-  border: 1px solid #dcdfe6;
-  padding: 5px;
+  position: relative;
+  background: linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%);
+  border: 1px solid #e5eaf3;
+  padding: 8px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
 }
 
 .grid-cell {
   position: relative;
   width: 100%;
   height: 100%;
-  border: 1px solid #e9e9e9;
+  border: 1px solid #e9eef5;
+  border-radius: 6px;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
 }
 
 .grid-cell:hover {
-  background-color: #cce5ff;
+  box-shadow: inset 0 0 0 2px rgba(64, 158, 255, 0.35);
 }
 
 .cell-content {
@@ -168,54 +223,76 @@ export default {
 }
 
 .road {
-  background-color: #dcdcdc;
+  background-color: #e8edf3;
 }
 
 .wall {
-  background-color: #595959;
+  background-color: #3a3f44;
 }
 
 .entrance {
   background-color: #67c23a;
-  color: white;
+  color: #fff;
 }
 
 .exit {
   background-color: #f56c6c;
-  color: white;
+  color: #fff;
 }
 
 .parking {
-  background-color: #a0cfff;
+  background: linear-gradient(135deg, #a0cfff 0%, #bfe6ff 100%);
 }
 
 .parking.occupied {
-  background-color: #fab6b6;
+  background: linear-gradient(135deg, #fab6b6 0%, #ffc3c3 100%);
 }
 
 
 .parking.reserved {
-  background-color: #e6a23c;
+  background: linear-gradient(135deg, #e6a23c 0%, #f3c46b 100%);
 }
 
 .parking.maintenance {
-  background-color: #909399;
+  background: linear-gradient(135deg, #909399 0%, #b0b3b8 100%);
+}
+
+.path-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.path-polyline {
+  fill: none;
+  stroke: url(#path-grad);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 10 10;
+  animation: pathDash 2s linear infinite;
+}
+
+@keyframes pathDash {
+  to { stroke-dashoffset: -20; }
+}
+
+.grid-cell.selected {
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
 }
 
 .path-indicator {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 10px;
-  height: 10px;
-  background-color: rgba(255, 0, 0, 0.7);
+  width: 8px;
+  height: 8px;
+  background-color: #ff4d4f;
   border-radius: 50%;
   transform: translate(-50%, -50%);
+  box-shadow: 0 0 6px rgba(255, 77, 79, 0.6);
   pointer-events: none;
-}
-
-.grid-cell.selected {
-  border: 3px solid #ffd700;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 </style>

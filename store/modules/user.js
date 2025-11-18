@@ -5,6 +5,7 @@ import { resetRouter } from '@/router'
 
 const getDefaultState = () => {
   return {
+    id: Number(localStorage.getItem('user_id') || 0),
     token: getToken(),
     name: localStorage.getItem('name') || '',
     avatar: localStorage.getItem('avatar') || '',
@@ -18,6 +19,10 @@ const state = getDefaultState()
 const mutations = {
   RESET_STATE: (state) => {
     Object.assign(state, getDefaultState())
+  },
+  SET_ID: (state, id) => {
+    state.id = Number(id || 0)
+    localStorage.setItem('user_id', String(state.id))
   },
   SET_TOKEN: (state, token) => {
     state.token = token
@@ -75,7 +80,8 @@ const actions = {
           return reject('Verification failed, please Login again.')
         }
 
-        const { username, role } = response
+        const { id, username, role } = response
+        commit('SET_ID', id)
         commit('SET_NAME', username)
         commit('SET_STATUS', role)
         resolve(response)

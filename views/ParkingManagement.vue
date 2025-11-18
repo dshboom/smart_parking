@@ -20,8 +20,8 @@
         </div>
       </div>
 
-      <div class="parking-lots-list">
-        <el-table :data="parkingLots" style="width: 100%" v-loading="loading" class="modern-table">
+      <div class="parking-lots-list" v-loading="loading">
+        <el-table :data="parkingLots" style="width: 100%" class="modern-table">
           <el-table-column prop="id" label="ID" width="80" />
           <el-table-column prop="name" label="名称" min-width="150" />
           <el-table-column prop="description" label="描述" min-width="200" />
@@ -229,22 +229,19 @@ export default {
           skip: (currentPage.value - 1) * pageSize.value,
           limit: pageSize.value
         })
-        
-        // Load stats for each parking lot
-        const lotsWithStats = await Promise.all(
+        const lotsWithInfo = await Promise.all(
           response.map(async (lot) => {
-            try {
-              const stats = await parkingApi.getParkingLotStats(lot.id)
-              return { ...lot, stats }
-            } catch (error) {
-              console.error(`Failed to load stats for lot ${lot.id}:`, error)
-              return { ...lot, stats: null }
-            }
+            let stats = null
+            let layout = null
+            try { stats = await parkingApi.getParkingLotStats(lot.id) } catch (_) {}
+            try { layout = await parkingApi.getParkingLotLayout(lot.id) } catch (_) {}
+            const rows = layout?.rows || 0
+            const cols = layout?.cols || 0
+            return { ...lot, stats, rows, cols }
           })
         )
-        
-        parkingLots.value = lotsWithStats
-        total.value = response.length // 假设后端返回的是分页数据
+        parkingLots.value = lotsWithInfo
+        total.value = response.length
       } catch (error) {
         ElMessage.error('加载停车场列表失败')
         console.error('Error loading parking lots:', error)
@@ -256,15 +253,22 @@ export default {
     const saveParkingLot = async () => {
       try {
         await lotFormRef.value.validate()
-        
+        const status = lotForm.is_active ? 'OPEN' : 'CLOSED'
+        const capacity = Number(lotForm.rows) * Number(lotForm.cols)
         if (editingLot.value) {
-          await parkingApi.updateParkingLot(editingLot.value.id, lotForm)
+          await parkingApi.updateParkingLot(editingLot.value.id, { address: lotForm.description, total_capacity: capacity, status })
+          const grid = Array.from({ length: lotForm.rows }, () => Array.from({ length: lotForm.cols }, () => 'parking'))
+          await parkingApi.updateParkingLotLayout(editingLot.value.id, { rows: lotForm.rows, cols: lotForm.cols, grid, entrance_position: { row: 0, col: 0 }, exit_position: { row: Math.max(0, lotForm.rows - 1), col: Math.max(0, lotForm.cols - 1) } })
           ElMessage.success('停车场更新成功')
         } else {
-          await parkingApi.createParkingLot(lotForm)
+          const created = await parkingApi.createParkingLot({ name: lotForm.name, address: lotForm.description || '', total_capacity: capacity, available_spots: capacity, status })
+          const lotId = created?.id || created?.data?.id || created?.lot_id || null
+          if (lotId) {
+            const grid = Array.from({ length: lotForm.rows }, () => Array.from({ length: lotForm.cols }, () => 'parking'))
+            await parkingApi.updateParkingLotLayout(lotId, { rows: lotForm.rows, cols: lotForm.cols, grid, entrance_position: { row: 0, col: 0 }, exit_position: { row: Math.max(0, lotForm.rows - 1), col: Math.max(0, lotForm.cols - 1) } })
+          }
           ElMessage.success('停车场创建成功')
         }
-        
         showCreateDialog.value = false
         loadParkingLots()
         resetForm()

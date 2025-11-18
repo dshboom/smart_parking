@@ -13,7 +13,7 @@
         <el-form-item label="类型">
           <el-select v-model="filterForm.space_type" placeholder="全部" clearable>
             <el-option label="全部" value="" />
-            <el-option label="普通" value="regular" />
+            <el-option label="普通" value="standard" />
             <el-option label="残疾人" value="disabled" />
             
           </el-select>
@@ -188,7 +188,7 @@ export default {
         const response = await parkingApi.getParkingSpaces(props.parkingLotId, {
           skip: (currentPage.value - 1) * pageSize.value,
           limit: pageSize.value,
-          status: filterForm.status || undefined,
+          status_value: filterForm.status || undefined,
           space_type: filterForm.space_type || undefined
         })
         
@@ -236,7 +236,15 @@ export default {
           }
         )
         
-        await parkingApi.reserveParkingSpace(space.id)
+        // 获取当前用户与默认车辆
+        const me = await (await import('@/api/user')).getInfo()
+        const uid = me?.id
+        const myVehicles = await (await import('@/api/user')).getMyVehicles()
+        const arr = Array.isArray(myVehicles) ? myVehicles : []
+        const def = arr.find(v => v.is_default) || arr[0]
+        const vid = def?.id
+        const until = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+        await parkingApi.reserveParkingSpace(space.id, { user_id: uid, vehicle_id: vid, reserved_until: until })
         ElMessage.success('停车位预留成功')
         loadParkingSpaces()
       } catch (error) {
@@ -248,7 +256,7 @@ export default {
 
     const occupySpace = async (space) => {
       try {
-        await ElMessageBox.prompt(
+        const { value } = await ElMessageBox.prompt(
           `请输入要占用车位 "${space.space_number}" 的车辆车牌号：`,
           '占用停车位',
           {

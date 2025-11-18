@@ -38,6 +38,15 @@
         <el-empty description="请先选择停车场" />
       </template>
     </div>
+
+    <!-- 通用操作区：入场前也可见 -->
+    <div class="find-actions">
+      <el-button
+        type="primary"
+        :disabled="!canStartParking"
+        @click="occupySelectedSpace"
+      >开始停车</el-button>
+    </div>
     
     <div class="current-status">
       <h4>当前状态</h4>
@@ -65,17 +74,13 @@
 
 
     <!-- 当前车辆与操作 -->
-    <div class="vehicle-ops">
+    <div class="vehicle-ops" v-if="hasActiveRecord">
       <h4>当前车辆</h4>
       <div class="vehicle-card">
-        <div class="vehicle-info">
+      <div class="vehicle-info">
           <div class="vehicle-line">
             <span class="label">车牌</span>
             <span class="value">{{ currentPlate || '未知' }}</span>
-          </div>
-          <div class="vehicle-line" v-if="currentVehicleId">
-            <span class="label">车辆ID</span>
-            <span class="value">{{ currentVehicleId }}</span>
           </div>
           <div class="vehicle-line" v-if="selectedSpaceId">
             <span class="label">已选择车位</span>
@@ -94,29 +99,10 @@
             <span class="value">{{ formatDuration(navigationTime) }}</span>
           </div>
         </div>
-    <div class="vehicle-actions">
-          <el-button type="primary" :disabled="!currentVehicleId || !selectedSpaceId" @click="occupySelectedSpace">占用此车位</el-button>
-          <el-button type="warning" :disabled="!selectedSpaceId" @click="openReservationDialog">预约此车位</el-button>
+        <div class="vehicle-actions">
+          <el-button type="warning" :disabled="!canReserve" :loading="reserveLoading" @click="reserveSelectedSpace">预约此车位</el-button>
           <el-button :disabled="!selectedLotId" @click="computeNearestPath">重新规划</el-button>
           <el-button type="success" :disabled="!canShowExitNav" @click="computeExitPath">离场导航</el-button>
-          <el-button type="danger" @click="mockPay">演示支付</el-button>
-          <!-- 预约弹窗放在同一模板中 -->
-          <el-dialog v-model="reservationDialogVisible" title="预约此车位" width="90%">
-            <el-form label-width="90px">
-              <el-form-item label="开始时间">
-                <el-date-picker v-model="reservationForm.start_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss.sssZ" />
-              </el-form-item>
-              <el-form-item label="结束时间">
-                <el-date-picker v-model="reservationForm.end_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss.sssZ" />
-              </el-form-item>
-            </el-form>
-            <template #footer>
-              <span class="dialog-footer">
-                <el-button @click="reservationDialogVisible = false">取消</el-button>
-                <el-button type="primary" @click="submitReservation">确认预约</el-button>
-              </span>
-            </template>
-          </el-dialog>
         </div>
       </div>
     </div>
@@ -126,9 +112,10 @@
 <script>
 import { Position, OfficeBuilding } from '@element-plus/icons-vue'
 import ParkingLotVisualization from '@/components/ParkingLotVisualization.vue'
-import * as parkingApi from '@/api/parking'
-import * as reservationsApi from '@/api/reservations'
-import * as vehicleApi from '@/api/vehicle'
+import { getParkingLots, getParkingLotStats, getParkingLotLayout, findNearestAvailableSpace, calculateNavigationPath, occupyParkingSpace, reserveParkingSpace } from '@/api/parking'
+import { settleParkingFee } from '@/api/payments'
+import * as userApi from '@/api/user'
+import { getToken } from '@/utils/auth'
 // 已移除VIP体系，无需定价配置的VIP校验
 
 export default {
@@ -152,51 +139,153 @@ export default {
       highlightSpaceId: null,
       selectedSpaceId: null,
       selectedSpaceCoord: null,
+      selectedSpaceIsAvailable: false,
+      reserveLoading: false,
       lastOccupiedSpaceCoord: null,
       // 当前车辆信息（来自路由参数）
       currentPlate: '',
-      currentVehicleId: null,
       // 路径指标
       navigationDistance: null,
       navigationTime: null
-      ,
-      // 预约弹窗与表单
-      reservationDialogVisible: false,
-      reservationForm: {
-        start_time: '',
-        end_time: ''
-      },
-      lastReservationId: null,
-      lastPaymentMessage: '',
       // 已移除VIP体系相关状态
     }
   },
   mounted() {
     this.loadParkingLots()
     this.prepareAutoNavFromRoute()
-    // 无VIP门控，直接加载
+    // 尝试从 sessionStorage 恢复车牌号
+    const savedPlate = sessionStorage.getItem('currentPlate')
+    if (savedPlate) {
+      this.currentPlate = savedPlate
+    }
+    // 检查绑定状态（需要登录）
+    const t = getToken()
+    if (!t) {
+      const current = this.$route?.fullPath || '/'
+      this.$router.push(`/login?redirect=${encodeURIComponent(current)}`)
+    }
   },
   computed: {
     canShowExitNav() {
       return !!(this.selectedLotId && this.lastOccupiedSpaceCoord)
     }
+    ,
+    canReserve() {
+      return !!(this.selectedLotId && this.selectedSpaceId && this.selectedSpaceIsAvailable && getToken())
+    }
+    ,
+    hasActiveRecord() {
+      return !!this.lastOccupiedSpaceCoord
+    }
+    ,
+    canStartParking() {
+      return !!(this.selectedLotId && (this.selectedSpaceId || this.highlightSpaceId))
+    }
   },
   methods: {
     onSpaceSelected(payload) {
       // 记录选择的车位及其坐标，清空现有路径
-      this.selectedSpaceId = payload?.spaceId || null
+      this.selectedSpaceId = (payload && (payload.id || payload.spaceId)) || null
       this.selectedSpaceCoord = payload && typeof payload.row === 'number' && typeof payload.col === 'number'
         ? { row: payload.row, col: payload.col }
         : null
+      this.selectedSpaceIsAvailable = !!(payload && String(payload.status).toLowerCase() === 'available' && !payload.is_reserved && !payload.is_under_maintenance)
       this.showPathData = []
       this.navigationDistance = null
       this.navigationTime = null
+      if (this.selectedSpaceId && this.selectedSpaceCoord) {
+        if (!this.hasActiveRecord) {
+          this.$confirm(`当前无入场车辆，是否预约车位 #${this.selectedSpaceId}？`, '预约确认', {
+            confirmButtonText: '预约',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(() => {
+            this.reserveSelectedSpace()
+          }).catch(() => {})
+        } else {
+          this.$confirm(`是否导航前往心仪车位 #${this.selectedSpaceId}？`, '导航确认', {
+            confirmButtonText: '导航',
+            cancelButtonText: '取消',
+            type: 'info'
+          }).then(async () => {
+            try {
+              await this.loadEntrancePosition()
+              const start = this.currentEntrancePosition || { row: 0, col: 0 }
+              const nav = await calculateNavigationPath(
+                this.selectedLotId,
+                start,
+                { row: this.selectedSpaceCoord.row, col: this.selectedSpaceCoord.col }
+              )
+              const path = Array.isArray(nav?.path) ? nav.path : []
+              this.showPathData = path
+              this.highlightSpaceId = this.selectedSpaceId
+              this.navigationDistance = nav?.distance ?? (Array.isArray(path) ? path.length : null)
+              this.navigationTime = nav?.estimated_time ?? null
+              if (this.showPathData.length > 0) {
+                this.$message.success('已生成导航路径')
+              } else {
+                this.$message.warning('未找到可达路径')
+              }
+            } catch (e) {
+              this.$message.error('导航生成失败')
+            }
+          }).catch(() => {})
+        }
+      }
+    },
+
+    async reserveSelectedSpace() {
+      if (!this.selectedSpaceId) {
+        this.$message.warning('请先在地图上选择一个空闲车位')
+        return
+      }
+      if (!this.selectedSpaceIsAvailable) {
+        this.$message.warning('该车位不可预约')
+        return
+      }
+      if (!getToken()) {
+        const current = this.$route?.fullPath || '/'
+        this.$router.push(`/login?redirect=${encodeURIComponent(current)}`)
+        return
+      }
+      try {
+        this.reserveLoading = true
+        const me = await userApi.getInfo()
+        const userId = (me && me.data && me.data.id) || me?.id
+        const normalizedCurrent = this.normalizePlate(this.currentPlate)
+        if (!userId || !normalizedCurrent) {
+          this.$message.warning('缺少车牌，请先在入场页确认车牌')
+          const current = this.$route?.fullPath || '/'
+          this.$router.push(`/mobile/entry?redirect=${encodeURIComponent(current)}`)
+          this.reserveLoading = false
+          return
+        }
+        const reservedUntil = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+        const rsv = await reserveParkingSpace(this.selectedSpaceId, { user_id: userId, license_plate: normalizedCurrent, reserved_until: reservedUntil })
+        try {
+          await settleParkingFee({ reservation_id: rsv?.id, amount: 2, payment_type: 'RESERVATION_FEE' })
+          this.$message.success('预约成功，已扣费 ¥2.00')
+        } catch (e) {
+          this.$message.warning('预约成功，余额不足或扣费失败')
+        }
+        await this.loadParkingStatus()
+      } catch (error) {
+        const status = error?.response?.status
+        if (status === 401) {
+          const current = this.$route?.fullPath || '/'
+          this.$router.push(`/login?redirect=${encodeURIComponent(current)}`)
+          return
+        }
+        this.$message.error(error?.response?.data?.detail || '预约失败')
+      } finally {
+        this.reserveLoading = false
+      }
     },
     // 已移除VIP门控，无需加载
     async loadParkingLots() {
       try {
         this.loading = true
-        const lots = await parkingApi.getParkingLots()
+        const lots = await getParkingLots()
         this.parkingLots = Array.isArray(lots) ? lots : (lots?.items ?? [])
         if (this.parkingLots.length > 0) {
           this.selectedLotId = this.parkingLots[0].id
@@ -216,7 +305,7 @@ export default {
     async loadParkingStatus() {
       try {
         if (!this.selectedLotId) return
-        const stats = await parkingApi.getParkingLotStats(this.selectedLotId)
+        const stats = await getParkingLotStats(this.selectedLotId)
         if (stats) {
           // 使用后端统计：占用数视为当前车辆数，可用数直接使用
           this.totalVehicles = stats.occupied_spaces ?? 0
@@ -231,14 +320,16 @@ export default {
     prepareAutoNavFromRoute() {
       const q = this.$route?.query || {}
       this.autoNavRequested = q.autoNav === '1' || q.autoNav === 1
-      this.currentPlate = q.plate || ''
-      this.currentVehicleId = q.vehicleId ? Number(q.vehicleId) : null
+      if (q.plate) {
+        this.currentPlate = this.normalizePlate(q.plate)
+        // 将规范化后的车牌号存入 sessionStorage
+        sessionStorage.setItem('currentPlate', this.currentPlate)
+      }
     },
 
     // 在选定车场后触发计算最近路径
     async autoComputeNearestPathIfRequested() {
       if (!this.autoNavRequested || !this.selectedLotId) return
-      await this.ensureVehicleId()
       await this.loadEntrancePosition()
       await this.computeNearestPath()
     },
@@ -246,7 +337,7 @@ export default {
     // 获取入口位置（若无则回退到 {row:0, col:0}）
     async loadEntrancePosition() {
       try {
-        const layout = await parkingApi.getParkingLotLayout(this.selectedLotId)
+        const layout = await getParkingLotLayout(this.selectedLotId)
         const ep = layout?.entrance_position
         if (ep && typeof ep.row === 'number' && typeof ep.col === 'number') {
           this.currentEntrancePosition = { row: ep.row, col: ep.col }
@@ -270,22 +361,28 @@ export default {
       try {
         const spaceType = await this.resolveSpaceType()
         const start = this.currentEntrancePosition || { row: 0, col: 0 }
-        const result = await parkingApi.findNearestAvailableSpace(
-          this.selectedLotId,
-          start,
-          spaceType
-        )
-
-        const path = result?.navigation_path?.path || []
-        const distance = result?.navigation_path?.distance ?? null
-        const eta = result?.navigation_path?.estimated_time ?? null
-        const space = result?.space || null
-        if (Array.isArray(path) && path.length > 0 && space?.id) {
-          this.showPathData = path
-          this.highlightSpaceId = space.id
-          this.navigationDistance = distance
-          this.navigationTime = eta
-          this.$message?.success?.('已自动规划到最近的可用车位')
+        const nearest = await findNearestAvailableSpace(this.selectedLotId, start, spaceType)
+        if (nearest && nearest.space_id) {
+          // 询问是否导航前往推荐车位
+          this.$confirm(`为您推荐最近车位 #${nearest.space_id}，是否导航前往？`, '导航确认', {
+            confirmButtonText: '导航',
+            cancelButtonText: '取消',
+            type: 'info'
+          }).then(async () => {
+            try {
+              const nav = await calculateNavigationPath(this.selectedLotId, start, { row: nearest.row, col: nearest.col })
+              const path = Array.isArray(nav?.path) ? nav.path : []
+              this.showPathData = path
+              this.highlightSpaceId = nearest.space_id
+              this.selectedSpaceId = nearest.space_id
+              this.selectedSpaceCoord = { row: nearest.row, col: nearest.col }
+              this.navigationDistance = nearest.distance ?? null
+              this.navigationTime = (Array.isArray(path) ? path.length : 0)
+              this.$message?.success?.('已生成导航路径')
+            } catch (e) {
+              this.$message.error('导航生成失败')
+            }
+          }).catch(() => {})
         } else {
           this.showPathData = []
           this.highlightSpaceId = null
@@ -303,44 +400,57 @@ export default {
       }
     },
 
-    // 若缺少车辆ID，则通过车牌补全
-    async ensureVehicleId() {
-      if (this.currentVehicleId || !this.currentPlate) return
-      try {
-        const vehicle = await vehicleApi.getVehicleByLicensePlate(this.currentPlate)
-        if (vehicle && vehicle.id) {
-          this.currentVehicleId = Number(vehicle.id)
-        }
-      } catch (error) {
-        console.warn('根据车牌解析车辆ID失败:', error)
-      }
-    },
+    // 不再通过管理端车辆接口补全ID，直接使用用户车牌与专属开始停车接口
 
-    // 占用推荐车位
+    // 选择车位后开始我的停车（占用+计费）
     async occupySelectedSpace() {
-      if (!this.selectedSpaceId) {
+      const targetSpaceId = this.selectedSpaceId || this.highlightSpaceId
+      if (!targetSpaceId) {
         this.$message.warning('请先在地图上选择一个车位')
         return
       }
-      if (!this.currentVehicleId) {
-        this.$message.warning('缺少车辆信息，无法占用')
+      if (!getToken()) {
+        const current = this.$route?.fullPath || '/'
+        this.$router.push(`/login?redirect=${encodeURIComponent(current)}`)
         return
       }
       try {
-        await parkingApi.occupyParkingSpace(this.selectedSpaceId, this.currentVehicleId)
-        this.$message.success('占用成功，已更新车位状态')
+        const targetCoord = this.selectedSpaceCoord || (this.highlightSpaceId ? { row: this.selectedSpaceCoord?.row ?? null, col: this.selectedSpaceCoord?.col ?? null } : null)
+        const normPlate = this.normalizePlate(this.currentPlate)
+        if (!normPlate) {
+          this.$message.warning('缺少车牌，请先在入场页确认车牌')
+          const query = { autoNav: '1' }
+          this.$router.push({ name: 'MobileEntry', query })
+          return
+        }
+        await occupyParkingSpace(targetSpaceId, { license_plate: normPlate })
+        this.$message.success('入场成功，已占用车位并开始计费')
         await this.loadParkingStatus()
-        // 记录最近一次占用的坐标，用于离场导航
-        this.lastOccupiedSpaceCoord = this.selectedSpaceCoord
-        // 清空路径显示，等待用户点击“离场导航”
+        this.lastOccupiedSpaceCoord = targetCoord || this.selectedSpaceCoord
         this.showPathData = []
         this.navigationDistance = null
         this.navigationTime = null
       } catch (error) {
-        console.error('占用车位失败:', error)
-        this.$message.error(error?.response?.data?.detail || '占用失败')
+        console.error('开始停车失败:', error)
+        const status = error?.response?.status
+        if (status === 401) {
+          const current = this.$route?.fullPath || '/'
+          this.$router.push(`/login?redirect=${encodeURIComponent(current)}`)
+          return
+        }
+        const detail = error?.response?.data?.detail
+        this.$message.error(detail ? `开始停车失败：${detail}` : '开始停车失败')
       }
     },
+
+    // 规范化车牌：移除分隔符与空格并转为大写
+    normalizePlate(plate) {
+      if (!plate) return ''
+      return String(plate).replace(/[•·\.\s]/g, '').toUpperCase()
+    },
+
+    // 检查当前车牌是否已绑定到账户
+    
 
     async computeExitPath() {
       if (!this.selectedLotId || !this.lastOccupiedSpaceCoord) {
@@ -348,9 +458,9 @@ export default {
         return
       }
       try {
-        const layout = await parkingApi.getParkingLotLayout(this.selectedLotId)
+        const layout = await getParkingLotLayout(this.selectedLotId)
         const exit = layout?.exit_position || { row: 0, col: 0 }
-        const nav = await parkingApi.calculateNavigationPath(
+        const nav = await calculateNavigationPath(
           this.selectedLotId,
           this.lastOccupiedSpaceCoord,
           { row: exit.row ?? 0, col: exit.col ?? 0 }
@@ -376,47 +486,7 @@ export default {
       if (s >= 60) return `${Math.round(s / 60)} 分钟`
       return `${s} 秒`
     }
-    ,
-    // 打开预约弹窗
-    openReservationDialog() {
-      if (!this.selectedSpaceId) {
-        this.$message.warning('请先选择车位')
-        return
-      }
-      // 已移除VIP门控，直接打开预约弹窗
-      const now = new Date()
-      const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000)
-      this.reservationForm.start_time = now.toISOString()
-      this.reservationForm.end_time = twoHoursLater.toISOString()
-      this.reservationDialogVisible = true
-    },
-    // 已移除VIP页面跳转
-    // 提交预约
-    async submitReservation() {
-      try {
-        // 确保时间为ISO字符串
-        const start = new Date(this.reservationForm.start_time)
-        const end = new Date(this.reservationForm.end_time)
-        const payload = {
-          parking_space_id: this.selectedSpaceId,
-          start_time: isNaN(start) ? this.reservationForm.start_time : start.toISOString(),
-          end_time: isNaN(end) ? this.reservationForm.end_time : end.toISOString()
-        }
-        const res = await reservationsApi.createReservation(payload)
-        this.lastReservationId = res?.id || res?.reservation_id || null
-        this.$message.success('预约成功！您可前往“我的预约”查看详情')
-        this.reservationDialogVisible = false
-      } catch (error) {
-        console.error('创建预约失败:', error)
-        this.$message.error(error?.response?.data?.detail || '创建预约失败，请稍后再试')
-      }
-    },
-    // 演示支付按钮：仅前端提示
-    mockPay() {
-      const id = this.lastReservationId ? `预约ID ${this.lastReservationId} ` : ''
-      this.lastPaymentMessage = `已完成支付（演示）${id}`
-      this.$message.success(this.lastPaymentMessage)
-    }
+    
   }
 }
 </script>

@@ -2,35 +2,38 @@ import request from '@/utils/request'
 
 // 余额相关
 export function getUserBalance() {
-  return request({ url: '/payments/balance', method: 'get' })
+  return request({ url: '/api/v1/wallet/balance', method: 'get' })
 }
 // 兼容移动端退出页现有命名
 export function getMyBalance() { return getUserBalance() }
 
 export function rechargeBalance(data) {
-  // data: { amount, payment_method }
-  return request({ url: '/payments/recharge', method: 'post', data })
+  return request({ url: '/api/v1/wallet/recharge', method: 'post', data })
 }
 
 export function withdrawBalance(data) {
-  // data: { amount, bank_account }
-  return request({ url: '/payments/withdraw', method: 'post', data })
+  return request({ url: '/api/v1/wallet/withdraw', method: 'post', data })
 }
 
 export function getUserTransactions(params) {
-  // params: { skip?, limit?, transaction_type? }
-  return request({ url: '/payments/transactions', method: 'get', params })
+  return request({ url: '/api/v1/wallet/transactions', method: 'get', params })
 }
 
 // 支付方式
 export function getPaymentMethods() {
-  return request({ url: '/payments/payment-methods', method: 'get' })
+  return request({ url: '/api/v1/wallet/methods', method: 'get' })
 }
 
 // 结算停车费用
 // payload: { record_id, use_balance, payment_method?, force_end? }
 export function settleParkingFee(payload) {
-  return request({ url: '/payments/parking/settle', method: 'post', data: payload })
+  // payload: { record_id?, reservation_id?, amount, payment_type }
+  const params = {}
+  if (payload?.record_id) params.parking_record_id = payload.record_id
+  if (payload?.reservation_id) params.reservation_id = payload.reservation_id
+  if (payload?.amount) params.amount = payload.amount
+  if (payload?.payment_type) params.payment_type = payload.payment_type
+  return request({ url: '/api/v1/wallet/settle', method: 'post', params })
 }
 
 // ===== 管理员支付管理相关 =====
@@ -40,4 +43,21 @@ export function getAdminPaymentOverview() {
 
 export function getAdminTransactions(params = {}) {
   return request({ url: '/payments/admin/transactions', method: 'get', params })
+}
+
+export function refundTransaction(data) {
+  return request({ url: '/payments/refund', method: 'post', data })
+}
+
+// ===== /api/v1 支付接口（与后端对齐） =====
+export function createPayment(data) {
+  return request({ url: '/api/v1/payments', method: 'post', data })
+}
+
+export function getMyPayments(params = {}) {
+  return request({ url: '/api/v1/payments/me', method: 'get', params })
+}
+
+export function getAdminPayments(params = {}) {
+  return request({ url: '/api/v1/admin/payments', method: 'get', params })
 }

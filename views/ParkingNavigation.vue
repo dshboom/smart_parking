@@ -222,8 +222,7 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Location, Top, Bottom, Left, Right } from '@element-plus/icons-vue'
-import * as parkingApi from '@/api/parking'
-import * as vehicleApi from '@/api/vehicle'
+import { getParkingLots, getParkingLotStats, getParkingLotLayout, findNearestAvailableSpace, calculateNavigationPath, occupyParkingSpace } from '@/api/parking'
 import ParkingLotVisualization from '@/components/ParkingLotVisualization.vue'
 import LicensePlateInput from '@/components/LicensePlateInput.vue'
 
@@ -273,13 +272,13 @@ export default {
     // Methods
     const loadParkingLots = async () => {
       try {
-        const response = await parkingApi.getParkingLots({ is_active: true })
+        const response = await getParkingLots({ is_active: true })
         
         // Load stats for each parking lot
         const lotsWithStats = await Promise.all(
           response.map(async (lot) => {
             try {
-              const stats = await parkingApi.getParkingLotStats(lot.id)
+              const stats = await getParkingLotStats(lot.id)
               return { ...lot, stats }
             } catch (error) {
               console.error(`Failed to load stats for lot ${lot.id}:`, error)
@@ -322,35 +321,26 @@ export default {
       loading.value = true
       try {
         // 先执行入场，拿到车辆ID（若已在场则读取车辆信息）
-        try {
-          const entryRes = await vehicleApi.vehicleEntry({ license_plate: vehicleForm.license_plate })
-          if (entryRes && entryRes.vehicle && entryRes.vehicle.id) {
-            enteredVehicleId.value = entryRes.vehicle.id
-          }
-        } catch (e) {
-          // 如果已在停车场，后端返回400，尝试读取车辆信息
-          try {
-            const v = await vehicleApi.getVehicleByLicensePlate(vehicleForm.license_plate)
-            if (v && v.id) {
-              enteredVehicleId.value = v.id
-            }
-          } catch (_) {}
-        }
-
-        // 查找最近空位（入口假设为(0,0)）
-        const response = await parkingApi.findNearestAvailableSpace(
+        const nearest = await findNearestAvailableSpace(
           selectedLot.value.id,
           entrancePosition.value || { row: 0, col: 0 },
-          vehicleForm.vehicle_type || 'small'
+          'standard'
         )
-
-        // 适配后端返回结构到前端显示结构
-        navigationResult.value = {
-          success: true,
-          space: response?.space,
-          path: response?.navigation_path?.path || [],
-          distance: response?.navigation_path?.distance,
-          estimated_time: response?.navigation_path?.estimated_time
+        if (nearest && nearest.space_id) {
+          const nav = await calculateNavigationPath(
+            selectedLot.value.id,
+            entrancePosition.value || { row: 0, col: 0 },
+            { row: nearest.row, col: nearest.col }
+          )
+          navigationResult.value = {
+            success: true,
+            space: { id: nearest.space_id, space_number: `#${nearest.space_id}`, row: nearest.row, col: nearest.col },
+            path: nav?.path || [],
+            distance: nearest.distance,
+            estimated_time: (Array.isArray(nav?.path) ? nav.path.length : 0)
+          }
+        } else {
+          navigationResult.value = { success: false, message: '未找到可用车位' }
         }
         currentStep.value = 3
         ElMessage.success('找到最近的停车位！')
@@ -365,7 +355,7 @@ export default {
     const loadEntrancePosition = async () => {
       if (!selectedLot.value) return
       try {
-        const layout = await parkingApi.getParkingLotLayout(selectedLot.value.id)
+        const layout = await getParkingLotLayout(selectedLot.value.id)
         if (layout && layout.entrance_position) {
           entrancePosition.value = layout.entrance_position
         }
@@ -430,9 +420,9 @@ export default {
           ElMessage.warning('尚未获取车辆ID，请重新查找车位')
           return
         }
-        await parkingApi.occupyParkingSpace(
+        await occupyParkingSpace(
           navigationResult.value.space.id,
-          enteredVehicleId.value
+          { license_plate: vehicleForm.license_plate }
         )
         ElMessage.success('停车确认成功！')
         resetNavigation()

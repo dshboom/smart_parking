@@ -144,23 +144,10 @@
             <el-icon><Download /></el-icon>
             导出数据
           </el-button>
-          <el-button type="warning" class="modern-btn" @click="simulateRealTimeUpdate">
-        <el-icon><Refresh /></el-icon>
-        测试实时更新
-      </el-button>
-      <el-button type="info" class="modern-btn" @click="handleVehicleEntry({license_plate: '京A12345', entry_time: new Date().toISOString(), parking_spot: 'A-01'})">
-        <el-icon><CircleCheck /></el-icon>
-        模拟进入
-      </el-button>
-      <el-button type="danger" class="modern-btn" @click="handleVehicleExit({license_plate: '京A12345', exit_time: new Date().toISOString(), fee: 25.5})">
-        <el-icon><CircleClose /></el-icon>
-        模拟离开
-      </el-button>
         </div>
       </div>
-      <div class="card-content">
+      <div class="card-content" v-loading="listLoading">
         <el-table
-          v-loading="listLoading"
           :data="list"
           class="modern-table"
           :row-class-name="tableRowClassName"
@@ -286,7 +273,7 @@
 import { ref, reactive, onMounted, computed, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Refresh, View, Van, CircleCheck, CircleClose, List, Download, Clock, Delete } from '@element-plus/icons-vue'
-import { vehicleEntry, vehicleExit, getVehicleRecordsList } from '@/api/vehicle'
+import { getVehicleRecordsList } from '@/api/vehicle'
 import { wsManager, subscribeToVehicleEntry, subscribeToVehicleExit } from '@/utils/websocket'
 
 export default {
@@ -540,101 +527,10 @@ export default {
       }
 
     // 模拟实时数据更新（用于测试）
-    const simulateRealTimeUpdate = () => {
-      const mockEntryData = {
-        license_plate: '京A' + Math.floor(Math.random() * 10000),
-        entry_time: new Date().toISOString(),
-        parking_spot: 'A-' + Math.floor(Math.random() * 100)
-      }
-      
-      const mockExitData = {
-        license_plate: '京B' + Math.floor(Math.random() * 10000),
-        exit_time: new Date().toISOString(),
-        fee: Math.floor(Math.random() * 50) + 10
-      }
-      
-      // 随机触发进入或离开事件
-      if (Math.random() > 0.5) {
-        handleVehicleEntry(mockEntryData)
-      } else {
-        handleVehicleExit(mockExitData)
-      }
-      
-      // 模拟WebSocket消息（如果连接存在）
-      if (wsManager.isConnected) {
-        const mockMessage = {
-          type: Math.random() > 0.5 ? 'vehicle_entry' : 'vehicle_exit',
-          payload: Math.random() > 0.5 ? mockEntryData : mockExitData,
-          timestamp: Date.now()
-        }
-        wsManager.handleMessage(mockMessage)
-      }
-    }
-
-    // 车辆进入事件处理（按钮/测试调用）
-    const handleVehicleEntry = async (payload) => {
-      try {
-        const plate = payload?.license_plate
-        if (!plate) {
-          ElMessage.warning('缺少车牌号码，无法入场')
-          return
-        }
-        // 后端入场记录
-        const resp = await vehicleEntry({ license_plate: plate })
-        const displayPlate = resp?.vehicle?.license_plate || plate
-        ElMessage.success(`车辆 ${displayPlate} 入场成功`)
-        // 触发本地订阅者更新（模拟WS推送）
-        wsManager.handleMessage({
-          type: 'vehicle_entry',
-          payload: {
-            license_plate: displayPlate,
-            entry_time: new Date().toISOString(),
-            parking_spot: payload?.parking_spot || null
-          }
-        })
-        // 刷新列表
-        getList()
-      } catch (error) {
-        console.error('车辆入场失败:', error)
-        ElMessage.error(error?.response?.data?.detail || error.message || '车辆入场失败')
-      }
-    }
-
-    // 车辆离开事件处理（按钮/测试调用）
-    const handleVehicleExit = async (payload) => {
-      try {
-        const plate = payload?.license_plate
-        if (!plate) {
-          ElMessage.warning('缺少车牌号码，无法出场')
-          return
-        }
-        // 后端出场记录
-        const resp = await vehicleExit({ license_plate: plate })
-        const displayPlate = resp?.vehicle?.license_plate || plate
-        ElMessage.success(`车辆 ${displayPlate} 出场成功`)
-        // 触发本地订阅者更新（模拟WS推送）
-        wsManager.handleMessage({
-          type: 'vehicle_exit',
-          payload: {
-            license_plate: displayPlate,
-            exit_time: new Date().toISOString(),
-            fee: payload?.fee || null
-          }
-        })
-        // 刷新列表
-        getList()
-      } catch (error) {
-        console.error('车辆出场失败:', error)
-        ElMessage.error(error?.response?.data?.detail || error.message || '车辆出场失败')
-      }
-    }
 
     // 将模拟函数暴露到全局，便于测试
     if (typeof window !== 'undefined') {
-      window.simulateRealTimeUpdate = simulateRealTimeUpdate
       window.wsManager = wsManager
-      window.vehicleEntryHandler = handleVehicleEntry
-      window.vehicleExitHandler = handleVehicleExit
     }
 
     return {
@@ -656,9 +552,7 @@ export default {
       refreshData,
       exportData,
       tableRowClassName,
-      simulateRealTimeUpdate,
-      handleVehicleEntry,
-      handleVehicleExit
+      
     }
   }
 }

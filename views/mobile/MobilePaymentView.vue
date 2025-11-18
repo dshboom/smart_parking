@@ -231,6 +231,7 @@ import {
   ArrowLeft, Wallet, Plus, Minus, Setting, Lock, Money,
   ArrowRight, Top, Bottom, Document, CreditCard, Iphone
 } from '@element-plus/icons-vue'
+import { getMyPayments, getPaymentMethods, getUserBalance, rechargeBalance, withdrawBalance } from '@/api/payments'
 
 export default {
   name: 'MobilePaymentView',
@@ -282,22 +283,14 @@ export default {
         this.$message.warning('请输入有效的充值金额')
         return
       }
-
       try {
-        const resp = await this.$store.dispatch('user/recharge', {
-          amount: this.rechargeAmount,
-          method: 'wechat'
-        })
-        // 后端返回最新余额
-        if (resp && typeof resp.balance === 'number') {
-          this.userBalance = resp.balance
-        }
+        await rechargeBalance({ amount: this.rechargeAmount, payment_method: 'WECHAT_PAY' })
+        await this.loadBalance()
         this.showRecharge = false
         this.$message.success(`充值成功 ¥${this.rechargeAmount}`)
-        // 刷新交易记录
         await this.loadTransactions()
       } catch (error) {
-        this.$message.error(error.message || '充值失败')
+        this.$message.error(error?.response?.data?.detail || '充值失败')
       }
     },
 
@@ -306,58 +299,41 @@ export default {
         this.$message.warning('请输入有效的提现金额')
         return
       }
-
-      if (this.withdrawAmount > this.userBalance) {
-        this.$message.warning('提现金额不能大于账户余额')
-        return
-      }
-
       if (!this.withdrawAccount.trim()) {
         this.$message.warning('请输入提现账户')
         return
       }
-
       try {
-        const resp = await this.$store.dispatch('user/withdraw', {
-          amount: this.withdrawAmount,
-          account: this.withdrawAccount
-        })
-        if (resp && typeof resp.balance === 'number') {
-          this.userBalance = resp.balance
-        }
+        await withdrawBalance({ amount: this.withdrawAmount, bank_account: this.withdrawAccount })
+        await this.loadBalance()
         this.showWithdraw = false
         this.$message.success(`提现申请已提交，金额 ¥${this.withdrawAmount}`)
-        // 刷新交易记录
         await this.loadTransactions()
-        // 重置表单
         this.withdrawAmount = 50
         this.withdrawAccount = ''
       } catch (error) {
-        this.$message.error(error.message || '提现失败')
+        this.$message.error(error?.response?.data?.detail || '提现失败')
       }
     },
 
     async loadBalance() {
       try {
-        const resp = await this.$store.dispatch('user/getBalance')
-        if (resp && typeof resp.balance === 'number') {
-          this.userBalance = resp.balance
-        }
+        const resp = await getUserBalance()
+        this.userBalance = Number(resp?.balance || 0)
       } catch (e) {
-        // 保持静默，仅在界面提示
-        this.$message.error(e?.response?.data?.detail || e.message || '获取余额失败')
+        this.userBalance = 0
       }
     },
 
     async loadTransactions() {
       try {
-        const resp = await this.$store.dispatch('user/getTransactions', { skip: 0, limit: 10 })
-        const list = Array.isArray(resp) ? resp : (resp?.data || [])
+        const resp = await getMyPayments({ skip: 0, limit: 10 })
+        const list = Array.isArray(resp) ? resp : (resp?.payments || resp?.data || [])
         this.recentTransactions = (list || []).map(t => ({
           id: t.id,
-          title: t.description || (t.transaction_type === 'recharge' ? '账户充值' : '交易'),
+          title: t.payment_type || '支付',
           amount: Math.abs(Number(t.amount || 0)),
-          type: (Number(t.amount || 0) >= 0) ? 'income' : 'expense',
+          type: (String(t.status || '').toLowerCase() === 'refunded') ? 'income' : 'expense',
           time: t.created_at ? new Date(t.created_at).toLocaleString() : ''
         }))
       } catch (e) {
@@ -367,19 +343,16 @@ export default {
 
     async loadPaymentMethods() {
       try {
-        const resp = await this.$store.dispatch('user/getPaymentMethods')
-        const list = Array.isArray(resp) ? resp : (resp?.data || [])
-        this.paymentMethods = (list || []).map(m => ({
-          id: m.id || m.method_type || 'balance',
-          name: m.method_type === 'wechat' ? '微信支付' : (m.method_type === 'alipay' ? '支付宝' : '账户余额'),
-          description: m.provider || '账户支付设置',
-          icon: m.method_type === 'alipay' ? 'CreditCard' : (m.method_type === 'wechat' ? 'Iphone' : 'Wallet'),
+        const methods = await getPaymentMethods()
+        this.paymentMethods = (methods || []).map(m => ({
+          id: m.method || 'wallet',
+          name: m.name || '账户余额',
+          description: m.provider || '支付方式',
+          icon: m.method === 'ALIPAY' ? 'CreditCard' : (m.method === 'WECHAT_PAY' ? 'Iphone' : 'Wallet'),
           enabled: true
         }))
       } catch (e) {
-        this.paymentMethods = [
-          { id: 'balance', name: '账户余额', description: '使用账户余额支付', icon: 'Wallet', enabled: true }
-        ]
+        this.paymentMethods = [{ id: 'wallet', name: '账户余额', description: '使用账户余额支付', icon: 'Wallet', enabled: true }]
       }
     },
 

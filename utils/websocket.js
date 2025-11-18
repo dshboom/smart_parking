@@ -1,6 +1,8 @@
 import { ElMessage } from 'element-plus';
 import { API_CONFIG } from '@/config/api.config';
 import { getToken } from '@/utils/auth';
+import store from '@/store';
+import router from '@/router';
 
 class WebSocketManager {
   constructor() {
@@ -18,18 +20,46 @@ class WebSocketManager {
     this.heartBeatTimeout = 30000;
   }
 
-  connect(url) {
+  async connect(url) {
     if (this.isConnecting || this.isConnected) {
-      console.log('WebSocket already connected or connecting');
       return;
     }
 
     // 获取token并添加到WebSocket URL
     const token = getToken();
+    if (!token) {
+      return;
+    }
+    // 简易过期校验：解析 JWT payload 的 exp
+    const isExpired = (() => {
+      try {
+        const parts = String(token).split('.');
+        if (parts.length !== 3) return false;
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        const exp = Number(payload?.exp || 0);
+        if (!exp) return false;
+        const now = Math.floor(Date.now() / 1000);
+        return exp <= now;
+      } catch (_) {
+        return false;
+      }
+    })();
+    if (isExpired) {
+      console.warn('WebSocket token expired, skip connect');
+      this.triggerEvent('auth_expired');
+      ElMessage.error('登录已过期，实时连接未建立');
+      try {
+        await store.dispatch('user/resetToken');
+      } catch (_) {}
+      try {
+        const current = router.currentRoute?.value?.fullPath || '/';
+        await router.push(`/login?redirect=${encodeURIComponent(current)}`);
+      } catch (_) {}
+      return;
+    }
     let wsUrl = url || API_CONFIG.wsUrl;
     
-    if (token) {
-      // 如果URL已经有参数，添加&，否则添加?
+    if (token && !/([?&])token=/.test(wsUrl)) {
       const separator = wsUrl.includes('?') ? '&' : '?';
       wsUrl = `${wsUrl}${separator}token=${token}`;
     }
@@ -155,7 +185,33 @@ class WebSocketManager {
     this.triggerEvent('message', data)
   }
 
-  handleReconnect() {
+  async handleReconnect() {
+    const token = getToken();
+    const expired = (() => {
+      try {
+        const parts = String(token || '').split('.');
+        if (parts.length !== 3) return !token;
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        const exp = Number(payload?.exp || 0);
+        const now = Math.floor(Date.now() / 1000);
+        return !token || (exp && exp <= now);
+      } catch (_) {
+        return true;
+      }
+    })();
+    if (expired) {
+      console.warn('Skip WebSocket reconnect due to missing/expired token');
+      this.triggerEvent('auth_expired');
+      ElMessage.error('登录已过期，请重新登录以恢复实时连接');
+      try {
+        await store.dispatch('user/resetToken');
+      } catch (_) {}
+      try {
+        const current = router.currentRoute?.value?.fullPath || '/';
+        await router.push(`/login?redirect=${encodeURIComponent(current)}`);
+      } catch (_) {}
+      return;
+    }
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.log('Max reconnection attempts reached');
       ElMessage.error('实时数据连接失败，请刷新页面重试');

@@ -42,9 +42,12 @@
 </template>
 
 <script>
-import { getMyCurrentParking } from '@/api/parking'
-import { calcParkingFeeAdvanced, calcParkingFee } from '@/api/pricing'
-import { getMyBalance, settleParkingFee } from '@/api/payments'
+import { getMyParkingHistory } from '@/api/user'
+import { getBillingRule } from '@/api/pricing'
+import { getUserBalance } from '@/api/payments'
+import { exitAndSettle, getParkingSpaces } from '@/api/parking'
+import { wsManager } from '@/utils/websocket'
+import { getToken } from '@/utils/auth'
 
 export default {
   name: 'MobileExitView',
@@ -55,7 +58,9 @@ export default {
       loading: false,
       settleLoading: false,
       useBalance: true,
-      balanceText: ''
+      balanceText: '',
+      wsOffStarted: null,
+      wsOffEnded: null
     }
   },
   computed: {
@@ -69,19 +74,52 @@ export default {
   },
   async mounted() {
     await this.loadAll()
+    // 按需建立 WebSocket 连接并订阅用户专属提醒
+    try { if (getToken()) wsManager.connect() } catch (e) {}
+    this.wsOffStarted = wsManager.subscribe('my_parking_started', (payload) => {
+      const plate = payload?.license_plate || payload?.payload?.license_plate
+      this.$message.success(`入场完成：${plate || '车辆'} 已入场`)
+      this.loadAll()
+    })
+    this.wsOffEnded = wsManager.subscribe('my_parking_ended', (payload) => {
+      const plate = payload?.license_plate || payload?.payload?.license_plate
+      const fee = payload?.final_fee ?? payload?.payload?.final_fee
+      const msg = fee != null ? `出场完成：${plate || '车辆'}，费用 ¥${Number(fee).toFixed(2)}` : `出场完成：${plate || '车辆'}`
+      this.$message.info(msg)
+      this.loadAll()
+    })
+  },
+  unmounted() {
+    try { if (typeof this.wsOffStarted === 'function') this.wsOffStarted() } catch (e) {}
+    try { if (typeof this.wsOffEnded === 'function') this.wsOffEnded() } catch (e) {}
+  },
+  onActivated() {
+    // 激活时强制刷新
+    this.loadAll()
   },
   methods: {
     async loadAll() {
       this.loading = true
       try {
-        const [current, balance] = await Promise.all([
-          getMyCurrentParking(),
-          getMyBalance().catch(() => ({ balance: 0 }))
+        const [currentList, balance] = await Promise.all([
+          getMyParkingHistory({ status: 'active', limit: 1 }),
+          getUserBalance().catch(() => ({ balance: 0 }))
         ])
-        // 兼容后端返回结构：{ has_current_parking, current_parking }
-        const curObj = current?.current_parking || current?.data?.current_parking || current || current?.data || null
-        this.current = curObj
-        const bal = Number(balance?.balance ?? balance?.data?.balance ?? 0)
+        const curObj = Array.isArray(currentList?.data) ? currentList.data[0] : (Array.isArray(currentList) ? currentList[0] : null)
+        // 解析当前活动记录并补充 space_id（用于释放）
+        if (curObj && curObj.parking_lot_id) {
+          try {
+            const spaces = await getParkingSpaces(curObj.parking_lot_id, { status_value: 'occupied' })
+            const list = Array.isArray(spaces) ? spaces : (Array.isArray(spaces?.items) ? spaces.items : [])
+            const match = list.find(s => s.vehicle_id === curObj.vehicle_id)
+            this.current = { ...curObj, space_id: match?.id || null }
+          } catch (_) {
+            this.current = curObj
+          }
+        } else {
+          this.current = curObj
+        }
+        const bal = Number(balance?.balance ?? 0)
         this.balanceText = `余额：¥${bal.toFixed(2)}`
         await this.refreshPreview()
       } catch (e) {
@@ -92,27 +130,31 @@ export default {
     },
     async refreshPreview() {
       if (!this.current?.entry_time) return
-      const entryISO = new Date(this.current.entry_time).toISOString()
-      const nowISO = new Date().toISOString()
+      if (!this.current?.parking_lot_id) { this.previewFee = '0.00'; return }
       try {
-        const resp = await calcParkingFeeAdvanced({
-          entry_time: entryISO,
-          exit_time: nowISO
-        })
-        const fee = Number(resp?.fee ?? resp?.data?.fee ?? 0)
-        this.previewFee = fee.toFixed(2)
-      } catch (e) {
-        console.warn('高级计费失败，回退基础计费：', e)
-        try {
-          const entry = new Date(this.current.entry_time)
-          const now = new Date()
-          const hours = Math.max((now - entry) / 3600000, 0)
-          const basic = await calcParkingFee(hours)
-          const fee2 = Number(basic?.fee ?? basic?.data?.fee ?? 0)
-          this.previewFee = fee2.toFixed(2)
-        } catch (_) {
-          this.previewFee = '0.00'
+        const ruleResp = await getBillingRule(this.current.parking_lot_id)
+        const freeMin = Number(ruleResp?.free_duration_minutes || 0)
+        const hourly = Number(ruleResp?.hourly_rate || 0)
+        const dailyCap = ruleResp?.daily_cap_rate != null ? Number(ruleResp.daily_cap_rate) : null
+        const entry = new Date(this.current.entry_time)
+        const now = new Date()
+        const totalMinutes = Math.max(Math.floor((now.getTime() - entry.getTime()) / 60000), 0)
+        if (totalMinutes <= freeMin) { this.previewFee = '0.00'; return }
+        const billableMinutes = totalMinutes - freeMin
+        let fee = 0
+        if (dailyCap == null) {
+          const hours = Math.floor((billableMinutes + 59) / 60)
+          fee = hourly * hours
+        } else {
+          const days = Math.floor(billableMinutes / 1440)
+          const rem = billableMinutes % 1440
+          const remHours = Math.floor((rem + 59) / 60)
+          const remFee = Math.min(hourly * remHours, dailyCap)
+          fee = days * dailyCap + remFee
         }
+        this.previewFee = Number(fee).toFixed(2)
+      } catch (e) {
+        this.previewFee = '0.00'
       }
     },
     formatTime(ts) {
@@ -121,19 +163,28 @@ export default {
       return date.toLocaleString()
     },
     async doSettle() {
-      if (!this.current?.id) return
+      if (!this.current?.id) {
+        this.$confirm('未选择车位，是否立即前往选择？', '提示', {
+          confirmButtonText: '前往选择',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          const plate = this.current?.license_plate || this.current?.license_plate_snapshot || ''
+          const query = plate ? `?autoNav=1&plate=${encodeURIComponent(plate)}` : '?autoNav=1'
+          this.$router.push(`/mobile/find${query}`)
+        }).catch(() => {})
+        return
+      }
       this.settleLoading = true
       try {
-        const payload = {
-          record_id: this.current.id,
-          use_balance: this.useBalance,
-          force_end: true
+        const resp = await exitAndSettle(this.current.id)
+        if (resp?.detail && resp.detail.includes('余额不足')) {
+          this.$message.warning('余额不足，请前往支付页完成支付')
+        } else {
+          const amt = Number(resp?.amount || this.previewFee || 0)
+          this.$message.success(`结算成功，支付金额：¥${amt.toFixed(2)}`)
         }
-        const resp = await settleParkingFee(payload)
-        const fee = Number(resp?.fee ?? resp?.data?.fee ?? 0).toFixed(2)
-        this.$message.success(`结算成功，支付金额：¥${fee}`)
-        // 结算后清空当前状态
-        this.current = null
+        await this.loadAll()
       } catch (error) {
         this.$message.error(error?.response?.data?.detail || error.message || '结算失败，请重试')
       } finally {

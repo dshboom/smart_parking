@@ -27,12 +27,16 @@
         <div v-if="editMode && !readOnly" class="edit-tools">
           <h4>编辑工具</h4>
           <el-radio-group :modelValue="selectedTool" @update:modelValue="$emit('update:selectedTool', $event)" size="small">
-            <el-radio-button label="parking">停车位</el-radio-button>
-            <el-radio-button label="wall">墙壁</el-radio-button>
-            <el-radio-button label="road">道路</el-radio-button>
-            <el-radio-button label="entrance">入口</el-radio-button>
-            <el-radio-button label="exit">出口</el-radio-button>
+            <el-radio-button value="parking">停车位</el-radio-button>
+            <el-radio-button value="wall">墙壁</el-radio-button>
+            <el-radio-button value="road">道路</el-radio-button>
+            <el-radio-button value="entrance">入口</el-radio-button>
+            <el-radio-button value="exit">出口</el-radio-button>
           </el-radio-group>
+          <div style="margin-top: 10px; display: flex; gap: 8px;">
+            <el-button type="primary" size="small" @click="saveLayout">保存布局</el-button>
+            <el-button type="warning" size="small" @click="resetLayout">重置布局</el-button>
+          </div>
         </div>
 
         <div v-if="editMode && selectedSpot && !readOnly" class="edit-attributes">
@@ -104,7 +108,7 @@ export default {
     stats: Object,
     path: Array
   },
-  emits: ['update:editMode', 'update:selectedTool', 'update:selectedSpot', 'find-nearest-empty-spot', 'reset-layout', 'save-selected-spot-attributes'],
+  emits: ['update:editMode', 'update:selectedTool', 'update:selectedSpot', 'find-nearest-empty-spot', 'reset-layout', 'save-selected-spot-attributes', 'save-layout'],
   setup(props, { emit }) {
     const toggleEditMode = () => {
       emit('update:editMode', !props.editMode)
@@ -118,6 +122,10 @@ export default {
       emit('reset-layout')
     }
 
+    const saveLayout = () => {
+      emit('save-layout')
+    }
+
     const saveSelectedSpotAttributes = () => {
       emit('save-selected-spot-attributes')
     }
@@ -126,6 +134,7 @@ export default {
       toggleEditMode,
       findNearestEmptySpot,
       resetLayout,
+      saveLayout,
       saveSelectedSpotAttributes
     }
   }

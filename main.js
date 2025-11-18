@@ -3,7 +3,7 @@ import './utils/passiveWheel' // make global wheel listeners passive on window/d
 import App from './App.vue'
 import router from './router'
 import store from './store'
-import ElementPlus from 'element-plus'
+import ElementPlus, { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
 import 'element-plus/dist/index.css'
 import './permission' // permission control
 import { wsManager } from '@/utils/websocket'
@@ -30,6 +30,7 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 
 app.mount('#app')
 
-// 建立全局 WebSocket 连接，并暴露到 window 方便页面取消订阅
-wsManager.connect()
-window.wsManager = wsManager
+// 不在全局建立 WebSocket 连接；仅在需要的页面（管理员视图）中按需连接
+app.config.globalProperties.$message = ElMessage
+app.config.globalProperties.$confirm = ElMessageBox.confirm
+app.config.globalProperties.$notify = ElNotification

@@ -9,9 +9,10 @@
       <span>结算</span>
     </div>
     <div class="nav-item" :class="{ active: activeTab === 'find' }" @click="navigateTo('/mobile/find')">
-      <el-icon><Search /></el-icon>
+      <el-icon><IconSearch /></el-icon>
       <span>寻找</span>
     </div>
+    
     <div class="nav-item" :class="{ active: activeTab === 'profile' }" @click="navigateTo('/mobile/profile')">
       <el-icon><User /></el-icon>
       <span>我的</span>
@@ -20,15 +21,15 @@
 </template>
 
 <script>
-import { Position, Search, User, SwitchButton } from '@element-plus/icons-vue'
+import { Position, Search as IconSearch, User, SwitchButton } from '@element-plus/icons-vue'
 
 export default {
   name: 'MobileBottomNav',
   components: {
     Position,
-    Search,
+    IconSearch,
     User,
-    SwitchButton
+    SwitchButton,
   },
   computed: {
     activeTab() {
@@ -54,14 +55,15 @@ export default {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: calc(60px + env(safe-area-inset-bottom, 0px));
   background: #fff;
   border-top: 1px solid #e0e0e0;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 
   .nav-item {
     display: flex;

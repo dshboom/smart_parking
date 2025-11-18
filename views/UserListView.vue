@@ -173,9 +173,8 @@
         </div>
       </div>
       
-      <div class="table-wrapper">
+      <div class="table-wrapper" v-loading="listLoading">
         <el-table
-          v-loading="listLoading"
           :data="list"
           stripe
           style="width: 100%"
@@ -242,7 +241,7 @@
                 <el-switch
                   v-model="row.status"
                   active-value="active"
-                  inactive-value="blocked"
+                  inactive-value="suspended"
                   @change="handleStatusChange(row)"
                   class="status-switch"
                   :loading="row.statusLoading"
@@ -289,16 +288,7 @@
                         <el-icon><Key /></el-icon>
                         重置密码
                       </el-dropdown-item>
-                      
-                      <el-dropdown-item command="blacklist" divided>
-                        <el-icon><Delete /></el-icon>
-                        加入黑名单
-                      </el-dropdown-item>
-                      <el-dropdown-item command="blacklist_remove" class="danger-item">
-                        <el-icon><Delete /></el-icon>
-                        移除黑名单
-                      </el-dropdown-item>
-                      <el-dropdown-item command="delete" divided class="danger-item" v-permission="'user:delete'">
+                      <el-dropdown-item command="delete" divided class="danger-item" v-if="hasPermission('user:delete')">
                       <el-icon><Delete /></el-icon>
                       删除用户
                     </el-dropdown-item>
@@ -374,13 +364,14 @@ import { Search, Refresh, Plus, Edit, Delete, List, Download, UserFilled, Phone,
 import { 
   fetchList, 
   updateUserStatus,
-  getUserByLicensePlate,
+  updateUser,
   getUserVehicles,
   bindUserVehicle,
   unbindUserVehicle,
   addBlacklist,
   removeBlacklist
 } from '@/api/user'
+import { hasPermission } from '@/utils/permission'
 
 export default {
   name: 'UserList',
@@ -452,47 +443,36 @@ export default {
     const getList = async () => {
       listLoading.value = true
       try {
-        // 如果按车牌搜索，优先按车牌查询用户
-        if (listQuery.license_plate && listQuery.license_plate.trim() !== '') {
-          try {
-            const resp = await getUserByLicensePlate(listQuery.license_plate.trim())
-            const user = resp?.data || resp
-            const filteredData = user ? [{ ...user, statusLoading: false }] : []
-            allUsers.value = filteredData
-            total.value = filteredData.length
-            const start = (listQuery.page - 1) * listQuery.limit
-            const end = start + listQuery.limit
-            list.value = filteredData.slice(start, end)
-            return
-          } catch (e) {
-            // 未找到或接口报错，降级为普通列表查询
-          }
-        }
-
         const params = {
-          // 不传分页参数，先获取过滤后的完整数据用于前端分页
-          status: listQuery.status || undefined,
+          search: listQuery.username || undefined,
+          status: listQuery.status === 'blocked' ? 'suspended' : (listQuery.status || undefined),
           role: listQuery.role || undefined,
-          username: listQuery.username || undefined,
+          skip: (listQuery.page - 1) * listQuery.limit,
+          limit: listQuery.limit,
         }
         const response = await fetchList(params)
-        const data = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : [])
-        let filteredData = [...data].map(u => ({ ...u, statusLoading: false }))
+        const items = Array.isArray(response?.items) ? response.items : []
+        let filteredData = items.map(u => ({
+          id: u.id,
+          username: u.username || u.phone_number,
+          phone: u.phone_number,
+          email: u.email,
+          nickname: u.nickname,
+          role: u.role,
+          status: u.status,
+          created_at: u.created_at,
+          updated_at: u.updated_at,
+          statusLoading: false
+        }))
 
-        // 排序
         if (listQuery.sort === '+id') {
           filteredData.sort((a, b) => a.id - b.id)
         } else if (listQuery.sort === '-id') {
           filteredData.sort((a, b) => b.id - a.id)
         }
 
-        allUsers.value = filteredData
-        total.value = filteredData.length
-
-        // 分页
-        const start = (listQuery.page - 1) * listQuery.limit
-        const end = start + listQuery.limit
-        list.value = filteredData.slice(start, end)
+        list.value = filteredData
+        total.value = Number(response?.total) || filteredData.length
       } catch (error) {
         console.error('获取用户列表失败:', error)
         ElMessage.error('获取用户列表失败')
@@ -556,23 +536,43 @@ export default {
     const handleStatusChange = async (row) => {
       row.statusLoading = true
       try {
-        await updateUserStatus(row.id, row.status)
+        const newStatus = row.status === 'blocked' ? 'suspended' : row.status
+        await updateUserStatus(row.id, newStatus)
         const statusText = row.status === 'active' ? '激活' : '禁用'
         ElMessage.success(`用户状态已更新为${statusText}`)
       } catch (error) {
         ElMessage.error('更新用户状态失败')
         // 回滚开关状态
-        row.status = row.status === 'active' ? 'blocked' : 'active'
+        row.status = row.status === 'active' ? 'suspended' : 'active'
       } finally {
         row.statusLoading = false
       }
     }
 
-    const submitForm = () => {
-      // 这里应该调用API保存数据
-      ElMessage.success(isEdit.value ? '用户更新成功' : '用户创建成功')
-      dialogVisible.value = false
-      getList()
+    const submitForm = async () => {
+      if (!isEdit.value) {
+        ElMessage.info('请使用注册入口创建用户')
+        dialogVisible.value = false
+        return
+      }
+      submitLoading.value = true
+      try {
+        const payload = {
+          username: userForm.username,
+          nickname: userForm.nickname,
+          email: userForm.email,
+          role: userForm.role,
+          status: userForm.status
+        }
+        await updateUser(userForm.id, payload)
+        ElMessage.success('用户更新成功')
+        dialogVisible.value = false
+        await getList()
+      } catch (e) {
+        ElMessage.error('用户更新失败')
+      } finally {
+        submitLoading.value = false
+      }
     }
 
     const handleDialogClose = () => {
@@ -619,42 +619,25 @@ export default {
           ElMessage.info(`查看用户详情: ${row.username}`)
           break
         case 'resetPwd':
-          ElMessageBox.confirm(
-            `确定要重置用户 "${row.username}" 的密码吗？`,
-            '重置密码确认',
-            {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning',
+          ElMessageBox.prompt('请输入新的密码', '重置密码', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            inputType: 'password',
+            inputPlaceholder: '至少8位字符'
+          }).then(async ({ value }) => {
+            const newPwd = String(value || '').trim()
+            if (!newPwd || newPwd.length < 6) {
+              ElMessage.warning('请输入有效的新密码')
+              return
             }
-          ).then(() => {
+            await updateUser(row.id, { new_password: newPwd })
             ElMessage.success('密码重置成功')
-          })
+          }).catch(() => {})
           break
         case 'delete':
           handleDelete(row)
           break
-        case 'vehicles':
-          currentUser.value = row
-          vehiclesDialogVisible.value = true
-          await loadUserVehicles(row.id)
-          break
         
-        case 'blacklist':
-          ElMessageBox.prompt('请输入加入黑名单的原因', '加入黑名单', {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消'
-          }).then(async ({ value }) => {
-            await addBlacklist(row.id, { reason: value || '违规' })
-            row.status = 'blocked'
-            ElMessage.success('已加入黑名单并禁用该用户')
-          }).catch(() => {})
-          break
-        case 'blacklist_remove':
-          await removeBlacklist(row.id)
-          row.status = 'active'
-          ElMessage.success('已移除黑名单并激活该用户')
-          break
       }
     }
 
@@ -786,7 +769,7 @@ export default {
     }
 
     const tableRowClassName = ({ row, rowIndex }) => {
-      if (row.status === 'blocked') {
+      if (row.status === 'blocked' || row.status === 'suspended') {
         return 'disabled-row'
       }
       return ''
@@ -857,6 +840,7 @@ export default {
       activeUsers,
       blockedUsers,
       adminUsers,
+      hasPermission,
       // dialogs & forms
       vehiclesDialogVisible,
       currentUser,

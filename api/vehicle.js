@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import { adaptVehicleData, adaptParkingRecord, adaptParkingLot, adaptPaginatedResponse } from './adapters'
 
 // 统一列表查询参数映射：page/page_size -> skip/limit；日期转 ISO 字符串
 function mapVehicleListParams(params = {}) {
@@ -22,32 +23,39 @@ function mapVehicleListParams(params = {}) {
 
 export function vehicleEntry(data) {
   return request({
-    url: '/vehicles/entry',
+    url: '/api/v1/parking-records/entry',
     method: 'post',
     data
   })
 }
 
-export function getVehiclesInParking() {
-  return request({
-    url: '/vehicles/in-parking',
-    method: 'get'
-  })
-}
+// 已移除：在场车辆列表（统一使用车辆列表/状态接口）
 
 export function getVehicles(params) {
   const query = mapVehicleListParams(params || {})
   return request({
-    url: '/vehicles',
+    url: '/api/v1/vehicles/me',
     method: 'get',
     params: query
+  }).then(response => {
+    // 适配车辆数据格式
+    if (response.data && Array.isArray(response.data)) {
+      response.data = response.data.map(adaptVehicleData)
+    }
+    return response
   })
 }
 
 export function getParkingStatus() {
   return request({
-    url: '/vehicles/status',
+    url: '/api/v1/parking-lots',
     method: 'get'
+  }).then(response => {
+    // 适配停车场数据格式
+    if (response.data && Array.isArray(response.data)) {
+      response.data = response.data.map(adaptParkingLot)
+    }
+    return response
   })
 }
 
@@ -58,7 +66,7 @@ export function vehicleExit(payload) {
       ? { license_plate: payload.license_plate }
       : payload;
   return request({
-    url: '/vehicles/exit',
+    url: '/api/v1/parking-records/exit',
     method: 'post',
     data
   })
@@ -66,7 +74,7 @@ export function vehicleExit(payload) {
 
 export function getVehicleByLicensePlate(licensePlate) {
   return request({
-    url: `/vehicles/${licensePlate}`,
+    url: `/api/v1/vehicles/by-license-plate/${licensePlate}`,
     method: 'get'
   })
 }
@@ -74,7 +82,7 @@ export function getVehicleByLicensePlate(licensePlate) {
 // 获取车辆当前实时费用（基于入场时间至现在）
 export function getVehicleCurrentFee(licensePlate) {
   return request({
-    url: `/vehicles/${licensePlate}/fee`,
+    url: `/api/v1/parking-records/current-fee/${licensePlate}`,
     method: 'get'
   })
 }
@@ -82,7 +90,7 @@ export function getVehicleCurrentFee(licensePlate) {
 // 管理端：车辆统计概览
 export function getVehicleStatsOverview() {
   return request({
-    url: '/vehicles/stats/overview',
+    url: '/api/v1/admin/vehicle-stats',
     method: 'get'
   })
 }
@@ -90,7 +98,7 @@ export function getVehicleStatsOverview() {
 // 管理端：车辆进出趋势（可选）
 export function getVehicleTrends(days = 30) {
   return request({
-    url: '/vehicles/stats/trends',
+    url: '/api/v1/admin/parking-records/trends',
     method: 'get',
     params: { days }
   })
@@ -128,7 +136,7 @@ export function getVehicleRecordsList(params = {}) {
   }
 
   return request({
-    url: '/vehicles/records/list',
+    url: '/api/v1/admin/parking-records',
     method: 'get',
     params: query
   })
