@@ -252,16 +252,8 @@ export default {
         this.reserveLoading = true
         const me = await userApi.getInfo()
         const userId = (me && me.data && me.data.id) || me?.id
-        const normalizedCurrent = this.normalizePlate(this.currentPlate)
-        if (!userId || !normalizedCurrent) {
-          this.$message.warning('缺少车牌，请先在入场页确认车牌')
-          const current = this.$route?.fullPath || '/'
-          this.$router.push(`/mobile/entry?redirect=${encodeURIComponent(current)}`)
-          this.reserveLoading = false
-          return
-        }
         const reservedUntil = new Date(Date.now() + 60 * 60 * 1000).toISOString()
-        const rsv = await reserveParkingSpace(this.selectedSpaceId, { user_id: userId, license_plate: normalizedCurrent, reserved_until: reservedUntil })
+        const rsv = await reserveParkingSpace(this.selectedSpaceId, { user_id: userId, reserved_until: reservedUntil })
         try {
           await settleParkingFee({ reservation_id: rsv?.id, amount: 2, payment_type: 'RESERVATION_FEE' })
           this.$message.success('预约成功，已扣费 ¥2.00')
@@ -446,7 +438,7 @@ export default {
     // 规范化车牌：移除分隔符与空格并转为大写
     normalizePlate(plate) {
       if (!plate) return ''
-      return String(plate).replace(/[•·\.\s]/g, '').toUpperCase()
+      return String(plate).replace(/[•·.\s]/g, '').toUpperCase()
     },
 
     // 检查当前车牌是否已绑定到账户

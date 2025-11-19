@@ -31,7 +31,7 @@
           size="large"
           class="city-input"
           @input="onCityInput"
-          @keyup.native="handleCityKeyup"
+          @keyup="handleCityKeyup"
           @focus="showKeyboardFor('city')"
         />
       </div>
@@ -48,7 +48,7 @@
           size="large"
           class="number-input"
           @input="onNumberInput"
-          @keyup.native="handleNumberKeyup"
+          @keyup="handleNumberKeyup"
           @focus="showKeyboardFor('number')"
         />
       </div>

@@ -8,7 +8,7 @@
           <el-tag :type="getRoleType(profile.role)" size="small">{{ profile.role }}</el-tag>
         </div>
       </template>
-      <el-form :model="profile" label-width="100px" @submit.native.prevent>
+      <el-form :model="profile" label-width="100px" @submit.prevent>
         <el-form-item label="用户名">
           <el-input v-model="profile.username" placeholder="请输入用户名" />
         </el-form-item>
@@ -39,7 +39,7 @@
       <template #header>
         <span>修改密码</span>
       </template>
-      <el-form :model="passwordForm" label-width="100px" @submit.native.prevent
+      <el-form :model="passwordForm" label-width="100px" @submit.prevent
                :rules="passwordRules" ref="passwordFormRef">
         <el-form-item label="当前密码" prop="current_password">
           <el-input type="password" v-model="passwordForm.current_password" placeholder="请输入当前密码" show-password />

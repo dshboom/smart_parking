@@ -216,6 +216,11 @@ export default {
         const spaces = Array.isArray(spacesResponse) ? spacesResponse : (Array.isArray(spacesResponse?.items) ? spacesResponse.items : [])
         const adapted = spaces.map(space => ({
           ...space,
+          space_number: (space && space.space_number != null)
+            ? space.space_number
+            : (space && space.id != null)
+              ? `#${space.id}`
+              : `(${space.row},${space.col})`,
           is_reserved: space.status === 'reserved',
           is_under_maintenance: space.status === 'maintenance'
         }))
@@ -402,7 +407,7 @@ export default {
       }
     }
 
-    const handleCellHover = ({ row, col }) => {
+    const handleCellHover = ({ row: _row, col: _col }) => {
       // 可以添加悬停效果
     }
 
@@ -486,7 +491,7 @@ export default {
       return displayPath.value.some(node => node.row === row && node.col === col)
     }
 
-    const getCellClasses = (cell, index) => {
+    const getCellClasses = (cell, _index) => {
       const classes = ['grid-cell', cell.type]
       
       if (isInPath(cell.row, cell.col)) {

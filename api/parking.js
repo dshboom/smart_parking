@@ -110,6 +110,15 @@ export function exitAndSettle(recordId) {
   })
 }
 
+// 用户预约列表
+export function getMyReservations(params) {
+  return request({
+    url: '/api/v1/reservations/me',
+    method: 'get',
+    params
+  })
+}
+
 // Navigation APIs
 export function calculateNavigationPath(parkingLotId, start, end) {
   return request({

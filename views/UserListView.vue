@@ -66,7 +66,7 @@
     <div class="filter-container modern-card">
       <div class="filter-header">
         <h3 class="filter-title">
-          <el-icon><Search /></el-icon>
+          <el-icon><SearchIcon /></el-icon>
           搜索筛选
         </h3>
         <div class="filter-tools">
@@ -110,7 +110,7 @@
           <el-col :span="8" class="filter-actions">
             <el-form-item label="&nbsp;">
               <el-button type="primary" @click="handleFilter" :loading="listLoading" class="filter-btn">
-                <el-icon><Search /></el-icon>
+                <el-icon><SearchIcon /></el-icon>
                 搜索
               </el-button>
               <el-button type="default" @click="handleReset" class="reset-btn">
@@ -281,7 +281,7 @@
                   <template #dropdown>
                     <el-dropdown-menu>
                       <el-dropdown-item command="view">
-                        <el-icon><View /></el-icon>
+                        <el-icon><ViewIcon /></el-icon>
                         查看详情
                       </el-dropdown-item>
                       <el-dropdown-item command="resetPwd">
@@ -360,23 +360,21 @@
 <script>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh, Plus, Edit, Delete, List, Download, UserFilled, Phone, Message, Star, View, Key, MoreFilled, User, CircleCheck, CircleClose } from '@element-plus/icons-vue'
+import { Search as SearchIcon, Refresh, Plus, Edit, Delete, List, Download, UserFilled, Phone, Message, Star, View as ViewIcon, Key, MoreFilled, User, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import { 
   fetchList, 
   updateUserStatus,
   updateUser,
   getUserVehicles,
   bindUserVehicle,
-  unbindUserVehicle,
-  addBlacklist,
-  removeBlacklist
+  unbindUserVehicle
 } from '@/api/user'
 import { hasPermission } from '@/utils/permission'
 
 export default {
   name: 'UserList',
   components: {
-    Search,
+    SearchIcon,
     Refresh,
     Plus,
     Edit,
@@ -390,7 +388,7 @@ export default {
     Star,
     CircleCheck,
     CircleClose,
-    View,
+    ViewIcon,
     Key,
     MoreFilled
   },
@@ -768,7 +766,7 @@ export default {
       }
     }
 
-    const tableRowClassName = ({ row, rowIndex }) => {
+    const tableRowClassName = ({ row }) => {
       if (row.status === 'blocked' || row.status === 'suspended') {
         return 'disabled-row'
       }

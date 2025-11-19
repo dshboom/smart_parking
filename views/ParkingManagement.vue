@@ -9,14 +9,14 @@
       <div class="table-header">
         <h3 class="table-title">停车场列表</h3>
         <div class="table-actions">
-          <el-button type="success" @click="exportData" class="modern-btn">
-            <el-icon><Download /></el-icon>
-            导出数据
-          </el-button>
-          <el-button type="primary" @click="showCreateDialog = true" class="modern-btn" v-permission="'parking:add'">
-            <el-icon><Plus /></el-icon>
-            新建停车场
-          </el-button>
+            <el-button type="success" @click="exportData" class="modern-btn">
+              <el-icon><DownloadIcon /></el-icon>
+              导出数据
+            </el-button>
+            <el-button type="primary" @click="showCreateDialog = true" class="modern-btn" v-permission="'parking:add'">
+              <el-icon><PlusIcon /></el-icon>
+              新建停车场
+            </el-button>
         </div>
       </div>
 
@@ -55,7 +55,7 @@
                 class="modern-btn-info-small"
                 v-permission="'parking:view'"
               >
-                <el-icon><View /></el-icon>
+                <el-icon><ViewIcon /></el-icon>
                 预览
               </el-button>
             </template>
@@ -159,7 +159,7 @@
 <script>
 import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, View, Download } from '@element-plus/icons-vue'
+import { Plus as PlusIcon, View as ViewIcon } from '@element-plus/icons-vue'
 import * as parkingApi from '@/api/parking'
 import { wsManager, subscribeToParkingUpdates } from '@/utils/websocket'
 import ParkingLotVisualization from '@/components/ParkingLotVisualization.vue'
@@ -169,8 +169,8 @@ import ParkingLotStatistics from '@/components/ParkingLotStatistics.vue'
 export default {
   name: 'ParkingManagement',
   components: {
-    Plus,
-    View,
+    PlusIcon,
+    ViewIcon,
     ParkingLotVisualization,
     ParkingSpacesList,
     ParkingLotStatistics
@@ -529,6 +529,10 @@ export default {
   animation: fadeInUp 0.8s ease-out 0.3s both;
   position: relative;
   overflow: hidden;
+}
+
+:deep(.el-card__body) {
+  overflow: visible;
 }
 
 .parking-lots-container::before {

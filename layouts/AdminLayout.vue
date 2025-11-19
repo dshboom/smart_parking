@@ -143,13 +143,10 @@ import {
   Monitor,
   User,
   Document,
-  Expand,
-  Fold,
   UserFilled,
   ArrowDown,
   OfficeBuilding,
   Setting,
-  Bell,
   SwitchButton,
   Wallet
 } from '@element-plus/icons-vue'
@@ -160,12 +157,9 @@ export default {
     Monitor,
     User,
     Document,
-    Expand,
-    Fold,
     UserFilled,
     ArrowDown,
     OfficeBuilding,
-    Bell,
     Setting,
     SwitchButton,
     Wallet

@@ -95,8 +95,8 @@
 <script>
 import { Right } from '@element-plus/icons-vue'
 import { getMyParkingHistory } from '@/api/user'
-import { vacateParkingSpace, getParkingSpaces, exitAndSettle } from '@/api/parking'
-import { settleParkingFee, getMyBalance } from '@/api/payments'
+import { getParkingSpaces, exitAndSettle } from '@/api/parking'
+import { getMyBalance } from '@/api/payments'
 import { wsManager } from '@/utils/websocket'
 import { getToken } from '@/utils/auth'
 import LicensePlateInput from '@/components/LicensePlateInput.vue'

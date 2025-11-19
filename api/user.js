@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import { adaptUserData, adaptPaginatedResponse } from './adapters'
+import { adaptUserData } from './adapters'
 
 export function login(data) {
   // Use URL-encoded body to match OAuth2PasswordRequestForm expectations
@@ -17,7 +17,7 @@ export function login(data) {
   })
 }
 
-export function getInfo(token) {
+export function getInfo(_token) {
   return request({
     url: '/api/v1/users/me',
     method: 'get'

@@ -37,7 +37,26 @@
       </el-card>
     </div>
 
-    <el-empty v-else description="请先在入场后进行停车，出场时在此结算" />
+    <div class="reservation-card" v-if="reservations && reservations.length">
+      <el-card shadow="hover">
+        <div class="exit-info">
+          <div class="row" v-for="r in reservations" :key="r.id">
+            <span class="label">预约车位</span>
+            <span class="value">#{{ r.space_id || '-' }}</span>
+          </div>
+          <div class="row" v-for="r in reservations" :key="r.id + '-exp'">
+            <span class="label">到期时间</span>
+            <span class="value">{{ formatTime(r.expires_at) }}</span>
+          </div>
+          <div class="row" v-for="r in reservations" :key="r.id + '-fee'">
+            <span class="label">预约费用</span>
+            <span class="value fee">¥{{ formatAmount(r.reservation_fee) }}</span>
+          </div>
+        </div>
+      </el-card>
+    </div>
+
+    <el-empty v-else description="请先在入场后进行停车或预约车位" />
   </div>
 </template>
 
@@ -45,7 +64,7 @@
 import { getMyParkingHistory } from '@/api/user'
 import { getBillingRule } from '@/api/pricing'
 import { getUserBalance } from '@/api/payments'
-import { exitAndSettle, getParkingSpaces } from '@/api/parking'
+import { exitAndSettle, getParkingSpaces, getMyReservations } from '@/api/parking'
 import { wsManager } from '@/utils/websocket'
 import { getToken } from '@/utils/auth'
 
@@ -60,7 +79,8 @@ export default {
       useBalance: true,
       balanceText: '',
       wsOffStarted: null,
-      wsOffEnded: null
+      wsOffEnded: null,
+      reservations: []
     }
   },
   computed: {
@@ -101,9 +121,10 @@ export default {
     async loadAll() {
       this.loading = true
       try {
-        const [currentList, balance] = await Promise.all([
+        const [currentList, balance, reservations] = await Promise.all([
           getMyParkingHistory({ status: 'active', limit: 1 }),
-          getUserBalance().catch(() => ({ balance: 0 }))
+          getUserBalance().catch(() => ({ balance: 0 })),
+          getMyReservations({ status_value: 'ACTIVE', limit: 10 }).catch(() => [])
         ])
         const curObj = Array.isArray(currentList?.data) ? currentList.data[0] : (Array.isArray(currentList) ? currentList[0] : null)
         // 解析当前活动记录并补充 space_id（用于释放）
@@ -121,6 +142,7 @@ export default {
         }
         const bal = Number(balance?.balance ?? 0)
         this.balanceText = `余额：¥${bal.toFixed(2)}`
+        this.reservations = Array.isArray(reservations?.data) ? reservations.data : (Array.isArray(reservations) ? reservations : [])
         await this.refreshPreview()
       } catch (e) {
         console.warn('加载出场数据失败：', e)
@@ -162,6 +184,10 @@ export default {
       const date = new Date(ts)
       return date.toLocaleString()
     },
+    formatAmount(a) {
+      const num = Number(a || 0)
+      return num.toFixed(2)
+    },
     async doSettle() {
       if (!this.current?.id) {
         this.$confirm('未选择车位，是否立即前往选择？', '提示', {
@@ -193,7 +219,7 @@ export default {
     }
   }
 }
-</script>
+  </script>
 
 <style lang="scss" scoped>
 .mobile-exit {

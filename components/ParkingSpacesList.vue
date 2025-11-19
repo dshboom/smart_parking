@@ -191,9 +191,16 @@ export default {
           status_value: filterForm.status || undefined,
           space_type: filterForm.space_type || undefined
         })
-        
-        parkingSpaces.value = response
-        total.value = response.length // 假设后端返回的是分页数据
+        const raw = Array.isArray(response) ? response : (Array.isArray(response?.items) ? response.items : [])
+        parkingSpaces.value = raw.map(space => ({
+          ...space,
+          space_number: (space && space.space_number != null)
+            ? space.space_number
+            : (space && space.id != null)
+              ? `#${space.id}`
+              : `(${space.row},${space.col})`
+        }))
+        total.value = raw.length
       } catch (error) {
         ElMessage.error('加载停车位列表失败')
         console.error('Error loading parking spaces:', error)

@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import { adaptVehicleData, adaptParkingRecord, adaptParkingLot, adaptPaginatedResponse } from './adapters'
+import { adaptVehicleData, adaptParkingLot } from './adapters'
 
 // 统一列表查询参数映射：page/page_size -> skip/limit；日期转 ISO 字符串
 function mapVehicleListParams(params = {}) {

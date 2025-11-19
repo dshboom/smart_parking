@@ -17,7 +17,7 @@
     <div class="modern-card filter-section">
       <div class="card-header">
         <h3 class="card-title">
-          <el-icon><Search /></el-icon>
+          <el-icon><SearchIcon /></el-icon>
           数据筛选
         </h3>
       </div>
@@ -33,7 +33,7 @@
               class="modern-input"
             >
               <template #prefix>
-                <el-icon><Search /></el-icon>
+                <el-icon><SearchIcon /></el-icon>
               </template>
             </el-input>
           </el-col>
@@ -78,7 +78,7 @@
           </el-col>
           <el-col :span="4" class="action-buttons">
             <el-button type="primary" class="modern-btn search-btn" @click="handleFilter" :loading="listLoading">
-              <el-icon><Search /></el-icon>
+              <el-icon><SearchIcon /></el-icon>
               搜索
             </el-button>
             <el-button class="modern-btn reset-btn" @click="handleReset">
@@ -95,7 +95,7 @@
       <div class="stats-container">
         <div class="stat-card">
           <div class="stat-icon total">
-            <el-icon><List /></el-icon>
+            <el-icon><ListIcon /></el-icon>
           </div>
           <div class="stat-content">
             <div class="stat-number">{{ total }}</div>
@@ -104,7 +104,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-icon enter">
-            <el-icon><CircleCheck /></el-icon>
+            <el-icon><CircleCheckIcon /></el-icon>
           </div>
           <div class="stat-content">
             <div class="stat-number">{{ stats.inParking }}</div>
@@ -113,7 +113,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-icon exit">
-            <el-icon><CircleClose /></el-icon>
+            <el-icon><CircleCloseIcon /></el-icon>
           </div>
           <div class="stat-content">
             <div class="stat-number">{{ stats.exited }}</div>
@@ -122,7 +122,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-icon revenue">
-            <el-icon><Clock /></el-icon>
+            <el-icon><ClockIcon /></el-icon>
           </div>
           <div class="stat-content">
             <div class="stat-number">{{ stats.todayRecords }}</div>
@@ -136,12 +136,12 @@
     <div class="modern-card table-section">
       <div class="card-header">
         <h3 class="card-title">
-          <el-icon><List /></el-icon>
+          <el-icon><ListIcon /></el-icon>
           车辆记录列表
         </h3>
         <div class="card-actions">
           <el-button type="success" class="modern-btn export-btn" @click="exportData" v-permission="'record:export'">
-            <el-icon><Download /></el-icon>
+            <el-icon><DownloadIcon /></el-icon>
             导出数据
           </el-button>
         </div>
@@ -162,7 +162,7 @@
           <el-table-column label="车牌号码" prop="license_plate" min-width="120" align="center">
             <template #default="scope">
               <div class="license-plate-cell">
-                <el-icon><Van /></el-icon>
+                <el-icon><VanIcon /></el-icon>
                 <span class="plate-text">{{ scope.row.license_plate }}</span>
               </div>
             </template>
@@ -174,8 +174,8 @@
                 class="status-tag"
                 :class="{ 'in-parking': scope.row.is_in_parking, 'exited': !scope.row.is_in_parking }"
               >
-                <el-icon v-if="scope.row.is_in_parking"><CircleCheck /></el-icon>
-                <el-icon v-else><CircleClose /></el-icon>
+                <el-icon v-if="scope.row.is_in_parking"><CircleCheckIcon /></el-icon>
+                <el-icon v-else><CircleCloseIcon /></el-icon>
                 {{ scope.row.is_in_parking ? '在场内' : '已离场' }}
               </el-tag>
             </template>
@@ -183,7 +183,7 @@
           <el-table-column label="进入时间" prop="entry_time" width="180" align="center" sortable="custom">
             <template #default="scope">
               <div class="time-cell">
-                <el-icon><Clock /></el-icon>
+                <el-icon><ClockIcon /></el-icon>
                 <span>{{ scope.row.entry_time }}</span>
               </div>
             </template>
@@ -191,7 +191,7 @@
           <el-table-column label="离开时间" prop="exit_time" width="180" align="center">
             <template #default="scope">
               <div class="time-cell" v-if="scope.row.exit_time">
-                <el-icon><Clock /></el-icon>
+                <el-icon><ClockIcon /></el-icon>
                 <span>{{ scope.row.exit_time }}</span>
               </div>
               <span v-else class="no-data">在场内</span>
@@ -200,7 +200,7 @@
           <el-table-column label="停车时长" width="150" align="center">
             <template #default="scope">
               <div class="duration-cell" v-if="scope.row.parking_duration">
-                <el-icon><Clock /></el-icon>
+                <el-icon><ClockIcon /></el-icon>
                 <span>{{ scope.row.parking_duration }}</span>
               </div>
               <span v-else-if="scope.row.is_in_parking" style="color: #67c23a;">在场内</span>
@@ -210,7 +210,7 @@
           <el-table-column label="操作" width="120" align="center" fixed="right">
             <template #default="scope">
               <el-button type="primary" class="modern-btn action-btn" @click="handleViewDetails(scope.row)">
-                <el-icon><View /></el-icon>
+                <el-icon><ViewIcon /></el-icon>
                 详情
               </el-button>
             </template>
@@ -270,17 +270,32 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, computed, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search, Refresh, View, Van, CircleCheck, CircleClose, List, Download, Clock, Delete } from '@element-plus/icons-vue'
+import { 
+  Search as SearchIcon,
+  View as ViewIcon,
+  Van as VanIcon,
+  CircleCheck as CircleCheckIcon,
+  CircleClose as CircleCloseIcon,
+  List as ListIcon,
+  Download as DownloadIcon,
+  Clock as ClockIcon
+} from '@element-plus/icons-vue'
 import { getVehicleRecordsList } from '@/api/vehicle'
 import { wsManager, subscribeToVehicleEntry, subscribeToVehicleExit } from '@/utils/websocket'
 
 export default {
   name: 'VehicleRecords',
   components: {
-    Search,
-    Refresh
+    SearchIcon,
+    ViewIcon,
+    VanIcon,
+    CircleCheckIcon,
+    CircleCloseIcon,
+    ListIcon,
+    DownloadIcon,
+    ClockIcon
   },
   setup() {
     const listLoading = ref(false)

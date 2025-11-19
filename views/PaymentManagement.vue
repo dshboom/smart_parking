@@ -6,7 +6,7 @@
         <h2>支付管理</h2>
         <div class="page-actions">
           <el-button type="primary" @click="exportData">
-            <el-icon><Download /></el-icon>
+              <el-icon><DownloadIcon /></el-icon>
             导出交易
           </el-button>
         </div>
@@ -92,7 +92,7 @@
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="viewDetails(row)">
-              <el-icon><View /></el-icon>
+              <el-icon><ViewIcon /></el-icon>
               详情
             </el-button>
             <el-button type="success" link @click="doRefund(row)" :disabled="row.status === 'refunded'">
@@ -135,7 +135,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { View, Download } from '@element-plus/icons-vue'
+import { View as ViewIcon, Download as DownloadIcon } from '@element-plus/icons-vue'
 import { getAdminPayments } from '@/api/payments'
 
 const loading = ref(false)

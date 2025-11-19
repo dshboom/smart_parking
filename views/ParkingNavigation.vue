@@ -221,7 +221,7 @@
 <script>
 import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Location, Top, Bottom, Left, Right } from '@element-plus/icons-vue'
+import { Location } from '@element-plus/icons-vue'
 import { getParkingLots, getParkingLotStats, getParkingLotLayout, findNearestAvailableSpace, calculateNavigationPath, occupyParkingSpace } from '@/api/parking'
 import ParkingLotVisualization from '@/components/ParkingLotVisualization.vue'
 import LicensePlateInput from '@/components/LicensePlateInput.vue'
@@ -368,7 +368,7 @@ export default {
       if (!selectedLot.value) return
       loading.value = true
       try {
-        const nav = await parkingApi.calculateNavigationPath(
+        const nav = await calculateNavigationPath(
           selectedLot.value.id,
           entrancePosition.value || { row: 0, col: 0 },
           { row, col }

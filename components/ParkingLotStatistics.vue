@@ -356,7 +356,7 @@ export default {
       return data
     }
 
-    const calculateAverageStayTime = (stats) => {
+    const calculateAverageStayTime = (_stats) => {
       // Mock calculation - in real implementation, this would be calculated from actual data
       const avgHours = Math.random() * 4 + 1 // 1-5 hours
       return `${avgHours.toFixed(1)}小时`
