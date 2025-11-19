@@ -5,10 +5,6 @@
       <div class="page-header">
         <h2>支付管理</h2>
         <div class="page-actions">
-          <el-button type="primary" @click="exportData">
-              <el-icon><DownloadIcon /></el-icon>
-            导出交易
-          </el-button>
         </div>
       </div>
 
@@ -135,7 +131,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { View as ViewIcon, Download as DownloadIcon } from '@element-plus/icons-vue'
+import { View as ViewIcon } from '@element-plus/icons-vue'
 import { getAdminPayments } from '@/api/payments'
 
 const loading = ref(false)
@@ -245,42 +241,6 @@ const handleReset = () => {
   loadTransactions()
 }
 
-const exportData = async () => {
-  try {
-    const isNumericUser = filterForm.user && /^\d+$/.test(filterForm.user)
-    const params = {
-      status: filterForm.status || undefined,
-      method: filterForm.method || undefined,
-      user_id: isNumericUser ? Number(filterForm.user) : undefined,
-      start_date: filterForm.dateRange?.[0] ? new Date(filterForm.dateRange[0]).toISOString() : undefined,
-      end_date: filterForm.dateRange?.[1] ? new Date(filterForm.dateRange[1]).toISOString() : undefined,
-      skip: 0,
-      limit: 1000
-    }
-    const res = await getAdminPayments(params)
-    const all = (res?.payments ?? res ?? []).map(t => ({
-      '交易ID': t.id,
-      '用户': (t.user && (t.user.username || t.user.name)) || '-',
-      '金额': `¥${(Number(t.amount ?? 0)).toFixed(2)}`,
-      '方式': t.payment_type || t.method || '-',
-      '状态': getStatusText(t.status || 'success'),
-      '时间': formatDateTime(t.created_at || t.createdAt)
-    }))
-    // 简单CSV导出
-    const headers = Object.keys(all[0] || {})
-    const csv = [headers.join(','), ...all.map(r => headers.map(h => r[h]).join(','))].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `payment-transactions-${Date.now()}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-    ElMessage.success('已导出交易数据')
-  } catch (error) {
-    ElMessage.error('导出失败')
-  }
-}
 
 const viewDetails = (row) => {
   currentRow.value = row

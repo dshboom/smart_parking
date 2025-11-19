@@ -9,12 +9,8 @@
       <div class="table-header">
         <h3 class="table-title">停车场列表</h3>
         <div class="table-actions">
-            <el-button type="success" @click="exportData" class="modern-btn">
-              <el-icon><DownloadIcon /></el-icon>
-              导出数据
-            </el-button>
             <el-button type="primary" @click="showCreateDialog = true" class="modern-btn" v-permission="'parking:add'">
-              <el-icon><PlusIcon /></el-icon>
+              <el-icon><Plus /></el-icon>
               新建停车场
             </el-button>
         </div>
@@ -55,7 +51,7 @@
                 class="modern-btn-info-small"
                 v-permission="'parking:view'"
               >
-                <el-icon><ViewIcon /></el-icon>
+                <el-icon><View /></el-icon>
                 预览
               </el-button>
             </template>
@@ -159,7 +155,6 @@
 <script>
 import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus as PlusIcon, View as ViewIcon } from '@element-plus/icons-vue'
 import * as parkingApi from '@/api/parking'
 import { wsManager, subscribeToParkingUpdates } from '@/utils/websocket'
 import ParkingLotVisualization from '@/components/ParkingLotVisualization.vue'
@@ -169,8 +164,6 @@ import ParkingLotStatistics from '@/components/ParkingLotStatistics.vue'
 export default {
   name: 'ParkingManagement',
   components: {
-    PlusIcon,
-    ViewIcon,
     ParkingLotVisualization,
     ParkingSpacesList,
     ParkingLotStatistics
@@ -322,38 +315,6 @@ export default {
       showDetailDialog.value = true
     }
 
-    // 导出数据
-    const exportData = async () => {
-      try {
-        // 获取所有停车场数据用于导出（不受分页限制）
-        const response = await parkingApi.getParkingLots({
-          skip: 0,
-          limit: 10000
-        })
-        
-        // 使用新的导出工具类
-        const { exportToExcel } = await import('@/utils/export')
-        
-        const exportData = response.map(lot => ({
-          '停车场ID': lot.id,
-          '名称': lot.name,
-          '描述': lot.description,
-          '尺寸': `${lot.rows} × ${lot.cols}`,
-          '状态': lot.is_active ? '活跃' : '停用',
-          '总车位数': lot.stats?.total_spaces || 0,
-          '已占用': lot.stats?.occupied_spaces || 0,
-          '可用车位': lot.stats?.available_spaces || 0,
-          '创建时间': lot.created_at || '-',
-          '更新时间': lot.updated_at || '-'
-        }))
-        
-        await exportToExcel(exportData, '停车场管理', '停车场数据导出')
-        ElMessage.success('数据导出成功')
-      } catch (error) {
-        console.error('导出失败:', error)
-        ElMessage.error('数据导出失败')
-      }
-    }
 
     const resetForm = () => {
       lotForm.name = ''
@@ -446,7 +407,6 @@ export default {
       deleteParkingLot,
       handleSpaceSelected,
       quickViewVisualization,
-      exportData,
       resetForm,
       handleSizeChange,
       handleCurrentChange,

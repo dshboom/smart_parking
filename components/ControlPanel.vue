@@ -39,28 +39,7 @@
           </div>
         </div>
 
-        <div v-if="editMode && selectedSpot && !readOnly" class="edit-attributes">
-          <h4>车位属性</h4>
-          <el-form label-width="90px" size="small">
-            <el-form-item label="车位类型">
-              <el-select :modelValue="selectedSpot.space_type" @update:modelValue="$emit('update:selectedSpot', { ...selectedSpot, space_type: $event })" style="width: 160px">
-                <el-option label="普通" value="standard" />
-                <el-option label="残疾人" value="disabled" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="维护停用">
-              <el-switch :modelValue="selectedSpot.is_under_maintenance" @update:modelValue="$emit('update:selectedSpot', { ...selectedSpot, is_under_maintenance: $event })" />
-            </el-form-item>
-            <el-form-item label="预约状态">
-              <el-tag :type="selectedSpot.is_reserved ? 'warning' : 'success'">
-                {{ selectedSpot.is_reserved ? '已预约' : '未预约' }}
-              </el-tag>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="saveSelectedSpotAttributes">保存</el-button>
-            </el-form-item>
-          </el-form>
-        </div>
+        
 
         <div class="info-panel">
           <el-row :gutter="20">
@@ -108,7 +87,7 @@ export default {
     stats: Object,
     path: Array
   },
-  emits: ['update:editMode', 'update:selectedTool', 'update:selectedSpot', 'find-nearest-empty-spot', 'reset-layout', 'save-selected-spot-attributes', 'save-layout'],
+  emits: ['update:editMode', 'update:selectedTool', 'update:selectedSpot', 'find-nearest-empty-spot', 'reset-layout', 'save-layout'],
   setup(props, { emit }) {
     const toggleEditMode = () => {
       emit('update:editMode', !props.editMode)
@@ -126,16 +105,11 @@ export default {
       emit('save-layout')
     }
 
-    const saveSelectedSpotAttributes = () => {
-      emit('save-selected-spot-attributes')
-    }
-
     return {
       toggleEditMode,
       findNearestEmptySpot,
       resetLayout,
-      saveLayout,
-      saveSelectedSpotAttributes
+      saveLayout
     }
   }
 }

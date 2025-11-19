@@ -60,9 +60,6 @@
         <el-card>
           <template #header>
             <span>详细统计信息</span>
-            <el-button style="float: right;" type="primary" size="small" @click="exportStatistics">
-              导出数据
-            </el-button>
           </template>
           <el-table :data="detailedStats" style="width: 100%">
             <el-table-column prop="metric" label="指标" width="200" />
@@ -362,24 +359,6 @@ export default {
       return `${avgHours.toFixed(1)}小时`
     }
 
-    const exportStatistics = () => {
-      // Mock export functionality
-      const data = {
-        overview: overviewStats,
-        detailed: detailedStats,
-        timestamp: new Date().toISOString()
-      }
-      
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `parking_statistics_${props.parkingLotId}_${new Date().getTime()}.json`
-      a.click()
-      URL.revokeObjectURL(url)
-      
-      ElMessage.success('统计数据导出成功')
-    }
 
     const handleResize = () => {
       if (statusChart) statusChart.resize()
@@ -459,7 +438,6 @@ export default {
       
       // Methods
       loadStatistics,
-      exportStatistics,
       handleResize
     }
   }

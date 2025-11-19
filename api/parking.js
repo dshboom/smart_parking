@@ -64,13 +64,6 @@ export function getParkingSpace(id) {
 }
 
 // 更新停车位信息（类型、维护、预约状态等）
-export function updateParkingSpace(id, data) {
-  return request({
-    url: `/api/v1/parking/spaces/${id}`,
-    method: 'put',
-    data
-  })
-}
 
 // 占用停车位
 export function occupyParkingSpace(spaceId, payloadOrVehicleId) {

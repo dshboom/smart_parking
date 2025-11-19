@@ -125,16 +125,7 @@
                   <el-icon><Document /></el-icon>
                   详情
                 </el-button>
-                <el-button 
-                  v-if="record.status === 'completed'"
-                  type="success" 
-                  @click="downloadInvoice(record)"
-                  size="small"
-                  plain
-                >
-                  <el-icon><Download /></el-icon>
-                  发票
-                </el-button>
+                
                 <el-button 
                   v-if="record.status === 'parking'"
                   type="warning" 
@@ -360,13 +351,7 @@
       </div>
       <template #footer>
         <el-button @click="showDetails = false">关闭</el-button>
-        <el-button 
-          v-if="selectedRecord.status === 'completed'"
-          type="primary" 
-          @click="downloadInvoice(selectedRecord)"
-        >
-          下载发票
-        </el-button>
+        
       </template>
     </el-dialog>
   </div>
@@ -375,7 +360,7 @@
 <script>
 import {
   ArrowLeft, Filter as FilterIcon, Van, Clock, Money, ArrowRight,
-  Document, Download, Refresh, SwitchButton, View as ViewIcon,
+  Document, Refresh, SwitchButton, View as ViewIcon,
   Top, CircleCheck, CircleClose, Warning, Calendar,
   Picture as PictureIcon
 } from '@element-plus/icons-vue'
@@ -386,7 +371,7 @@ export default {
   name: 'MobileHistoryView',
   components: {
     ArrowLeft, FilterIcon, Van, Clock, Money, ArrowRight,
-    Document, Download, Refresh, SwitchButton, ViewIcon,
+    Document, Refresh, SwitchButton, ViewIcon,
     Top, CircleCheck, CircleClose, Warning, Calendar,
     PictureIcon
   },
@@ -528,10 +513,7 @@ export default {
       this.showDetails = true
     },
 
-    downloadInvoice(_record) {
-      ElMessage.info('发票下载功能开发中...')
-      // 实际项目中这里会调用下载发票的API
-    },
+    
 
     extendParking(_record) {
       ElMessage.info('延长停车功能开发中...')

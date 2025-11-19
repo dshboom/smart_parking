@@ -10,7 +10,6 @@
       @find-nearest-empty-spot="findNearestEmptySpot"
       @reset-layout="resetLayout"
       @save-layout="saveLayout"
-      @save-selected-spot-attributes="saveSelectedSpotAttributes"
     />
 
     
@@ -450,31 +449,6 @@ export default {
       }
     }
 
-    const saveSelectedSpotAttributes = async () => {
-      if (!selectedSpot.value) return
-      try {
-        const payload = {}
-        if (selectedSpot.value.space_type) {
-          payload.space_type = selectedSpot.value.space_type
-        }
-        // 维护状态映射到后端 status 字段
-        if (selectedSpot.value.is_under_maintenance) {
-          payload.status = 'maintenance'
-        } else {
-          // 若取消维护，设置为 available（不影响占用/预约，由后端/WS驱动）
-          payload.status = 'available'
-        }
-        const updated = await parkingApi.updateParkingSpace(selectedSpot.value.id, payload)
-        // 更新本地缓存
-        coordToSpace.value.set(`${updated.row},${updated.col}`, updated)
-        // 触发响应式更新
-        coordToSpace.value = new Map(coordToSpace.value)
-        selectedSpot.value = updated
-        ElMessage.success('车位属性已保存')
-      } catch (error) {
-        ElMessage.error('保存车位属性失败')
-      }
-    }
 
     const displayPath = computed(() => {
       if (props.showPath && props.showPath.length > 0) {
@@ -648,7 +622,6 @@ export default {
       findNearestEmptySpot,
       resetLayout,
       saveLayout,
-      saveSelectedSpotAttributes,
       isInPath,
       getCellClasses,
       getTooltipContent,

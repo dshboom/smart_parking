@@ -92,8 +92,6 @@ export default {
       height: containerHeight.value > 0 ? `${containerHeight.value}px` : 'auto'
     }))
 
-    const cellWidth = computed(() => (containerWidth.value > 0 ? containerWidth.value / props.GRID_COLS : 0))
-    const cellHeight = computed(() => (containerHeight.value > 0 ? containerHeight.value / props.GRID_ROWS : 0))
     // 路径点计算移除：使用每格指示器样式替代
 
     // path traveler animation removed; using per-cell dot indicators

@@ -154,15 +154,6 @@
         </div>
         <div class="table-actions">
           <el-button 
-            type="primary" 
-            @click="handleBatchExport" 
-            class="export-btn"
-            :disabled="selectedUsers.length === 0"
-          >
-            <el-icon><Download /></el-icon>
-            导出选中
-          </el-button>
-          <el-button 
             type="success" 
             @click="handleCreate" 
             class="add-user-btn"
@@ -360,7 +351,7 @@
 <script>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search as SearchIcon, Refresh, Plus, Edit, Delete, List, Download, UserFilled, Phone, Message, Star, View as ViewIcon, Key, MoreFilled, User, CircleCheck, CircleClose } from '@element-plus/icons-vue'
+import { Search as SearchIcon, Refresh, Plus, Edit, Delete, List, UserFilled, Phone, Message, Star, View as ViewIcon, Key, MoreFilled, User, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import { 
   fetchList, 
   updateUserStatus,
@@ -373,19 +364,18 @@ import { hasPermission } from '@/utils/permission'
 
 export default {
   name: 'UserList',
-  components: {
-    SearchIcon,
-    Refresh,
-    Plus,
-    Edit,
-    Delete,
-    List,
-    Download,
-    User,
-    UserFilled,
-    Phone,
-    Message,
-    Star,
+    components: {
+      SearchIcon,
+      Refresh,
+      Plus,
+      Edit,
+      Delete,
+      List,
+      User,
+      UserFilled,
+      Phone,
+      Message,
+      Star,
     CircleCheck,
     CircleClose,
     ViewIcon,
@@ -730,32 +720,6 @@ export default {
 
     // 移除VIP管理逻辑
 
-    const handleBatchExport = () => {
-      if (selectedUsers.value.length === 0) {
-        ElMessage.warning('请先选择要导出的用户')
-        return
-      }
-      
-      try {
-        const exportData = selectedUsers.value.map(user => ({
-          '用户ID': user.id,
-          '用户名': user.username,
-          '手机号': user.phone,
-          '角色': user.role === 'admin' ? '管理员' : '用户',
-          '状态': user.status === 'active' ? '激活' : '禁用',
-          '创建时间': formatDate(user.created_at),
-          '更新时间': formatDate(user.updated_at)
-        }))
-        
-        import('@/utils/export').then(({ exportToExcel }) => {
-          exportToExcel(exportData, '用户数据导出.xlsx')
-          ElMessage.success(`成功导出 ${selectedUsers.value.length} 个用户数据`)
-        })
-      } catch (error) {
-        console.error('导出失败:', error)
-        ElMessage.error('导出失败，请重试')
-      }
-    }
 
     const tableHeaderStyle = () => {
       return {
@@ -825,7 +789,6 @@ export default {
       handleStatusChange,
       handleSelectionChange,
       handleMoreAction,
-      handleBatchExport,
       submitForm,
       handleDialogClose,
       sortChange,

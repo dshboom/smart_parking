@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import store from '@/store'
 import router from '@/router'
 import { getToken } from '@/utils/auth'

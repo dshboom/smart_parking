@@ -9,7 +9,6 @@
       <div class="user-info">
         <h3>{{ userInfo.username || '用户' }}</h3>
         <p>{{ userInfo.phone || '未绑定手机号' }}</p>
-        <!-- 已移除VIP等级显示 -->
       </div>
     </div>
     

@@ -140,10 +140,6 @@
           车辆记录列表
         </h3>
         <div class="card-actions">
-          <el-button type="success" class="modern-btn export-btn" @click="exportData" v-permission="'record:export'">
-            <el-icon><DownloadIcon /></el-icon>
-            导出数据
-          </el-button>
         </div>
       </div>
       <div class="card-content" v-loading="listLoading">
@@ -279,7 +275,6 @@ import {
   CircleCheck as CircleCheckIcon,
   CircleClose as CircleCloseIcon,
   List as ListIcon,
-  Download as DownloadIcon,
   Clock as ClockIcon
 } from '@element-plus/icons-vue'
 import { getVehicleRecordsList } from '@/api/vehicle'
@@ -287,16 +282,15 @@ import { wsManager, subscribeToVehicleEntry, subscribeToVehicleExit } from '@/ut
 
 export default {
   name: 'VehicleRecords',
-  components: {
-    SearchIcon,
-    ViewIcon,
-    VanIcon,
-    CircleCheckIcon,
-    CircleCloseIcon,
-    ListIcon,
-    DownloadIcon,
-    ClockIcon
-  },
+    components: {
+      SearchIcon,
+      ViewIcon,
+      VanIcon,
+      CircleCheckIcon,
+      CircleCloseIcon,
+      ListIcon,
+      ClockIcon
+    },
   setup() {
     const listLoading = ref(false)
     const total = ref(0)
@@ -429,48 +423,6 @@ export default {
     listLoading.value = false
   }
 
-  const exportData = async () => {
-    try {
-      // 获取当前筛选条件下的数据用于导出（最大100条受后端限制）
-      const params = { skip: 0, limit: 100 }
-      if (listQuery.status === 'in') params.is_in_parking = true
-      else if (listQuery.status === 'out') params.is_in_parking = false
-      if (listQuery.license_plate) params.license_plate = listQuery.license_plate
-      if (listQuery.dateRange && listQuery.dateRange.length === 2) {
-        params.start_date = listQuery.dateRange[0]
-        params.end_date = listQuery.dateRange[1]
-      }
-
-      const resp = await getVehicleRecordsList(params)
-      const rawList = Array.isArray(resp?.items)
-        ? resp.items
-        : (Array.isArray(resp?.records) ? resp.records : [])
-      let filteredData = rawList.map(r => ({
-        license_plate: r.license_plate || r.licensePlate,
-        entry_time: formatDateTime(r.entry_time || r.entryTime),
-        exit_time: (r.exit_time || r.exitTime) ? formatDateTime(r.exit_time || r.exitTime) : '在场内',
-        parking_duration: (r.exit_time || r.exitTime) ? (computeDuration(r.entry_time || r.entryTime, r.exit_time || r.exitTime) || '-') : '在场内',
-        status: (typeof r.is_in_parking !== 'undefined' ? r.is_in_parking : r.isInParking) ? '在场内' : '已离场'
-      }))
-
-      // 使用新的导出工具类
-      const { exportToExcel } = await import('@/utils/export')
-      
-      const exportData = filteredData.map(row => ({
-        '车牌号码': row.license_plate,
-        '进入时间': row.entry_time,
-        '离开时间': row.exit_time,
-        '停车时长': row.parking_duration,
-        '状态': row.status
-      }))
-
-      await exportToExcel(exportData, '车辆记录', '车辆记录导出')
-      ElMessage.success('数据导出成功')
-    } catch (error) {
-      console.error('导出失败:', error)
-      ElMessage.error('导出失败，请重试')
-    }
-  }
 
   const tableRowClassName = ({ row }) => {
     return row.is_in_parking ? 'parking-row' : 'exited-row'
@@ -565,7 +517,6 @@ export default {
       handleDialogClose,
       sortChange,
       refreshData,
-      exportData,
       tableRowClassName,
       
     }

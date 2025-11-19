@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+// import removed: no Vue refs needed in this composable
 
 export function usePathfinding(grid, occupiedSpots, GRID_ROWS, GRID_COLS) {
   const heuristic = (a, b) => {
