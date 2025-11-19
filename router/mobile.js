@@ -8,6 +8,7 @@ import MobileProfileEditView from '@/views/mobile/MobileProfileEditView.vue'
 import MobilePaymentView from '@/views/mobile/MobilePaymentView.vue'
 import MobileHistoryView from '@/views/mobile/MobileHistoryView.vue'
 import MobileExitView from '@/views/mobile/MobileExitView.vue'
+import MobileForgotPasswordView from '@/views/mobile/MobileForgotPasswordView.vue'
 
 const mobileRoutes = [
   {
@@ -40,7 +41,6 @@ const mobileRoutes = [
         component: MobileProfileView,
         meta: { title: '用户中心', requiresAuth: true }
       },
-      // Removed empty route object
     ]
   },
   {
@@ -73,6 +73,12 @@ const mobileRoutes = [
     name: 'MobileRegister',
     component: MobileRegisterView,
     meta: { title: '注册' }
+  },
+  {
+    path: '/forgot-password',
+    name: 'MobileForgotPassword',
+    component: MobileForgotPasswordView,
+    meta: { title: '忘记密码' }
   }
 ]
 

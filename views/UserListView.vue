@@ -171,7 +171,6 @@
           style="width: 100%"
           @sort-change="sortChange"
           @selection-change="handleSelectionChange"
-          @expand-change="handleExpandChange"
           class="modern-table"
           :header-cell-style="tableHeaderStyle"
           :row-class-name="tableRowClassName"
@@ -355,10 +354,7 @@ import { Search as SearchIcon, Refresh, Plus, Edit, Delete, List, UserFilled, Ph
 import { 
   fetchList, 
   updateUserStatus,
-  updateUser,
-  getUserVehicles,
-  bindUserVehicle,
-  unbindUserVehicle
+  updateUser
 } from '@/api/user'
 import { hasPermission } from '@/utils/permission'
 
@@ -629,95 +625,6 @@ export default {
       }
     }
 
-    // ===== 车辆绑定 =====
-    const vehiclesDialogVisible = ref(false)
-    const currentUser = ref(null)
-    const vehicles = ref([])
-    const vehicleForm = reactive({ license_plate: '' })
-
-    const loadUserVehicles = async (userId) => {
-      try {
-        const resp = await getUserVehicles(userId)
-        vehicles.value = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : [])
-      } catch (e) {
-        vehicles.value = []
-      }
-    }
-
-    const addVehicle = async () => {
-      if (!vehicleForm.license_plate || vehicleForm.license_plate.trim() === '') {
-        ElMessage.warning('请输入车牌号码')
-        return
-      }
-      try {
-        await bindUserVehicle(currentUser.value.id, { license_plate: vehicleForm.license_plate.trim() })
-        ElMessage.success('车辆绑定成功')
-        vehicleForm.license_plate = ''
-        await loadUserVehicles(currentUser.value.id)
-      } catch (e) {
-        ElMessage.error('车辆绑定失败')
-      }
-    }
-
-    const removeVehicle = async (licensePlate) => {
-      try {
-        await unbindUserVehicle(currentUser.value.id, licensePlate)
-        ElMessage.success('已解除绑定')
-        await loadUserVehicles(currentUser.value.id)
-      } catch (e) {
-        ElMessage.error('解除绑定失败')
-      }
-    }
-
-    // ===== 表格展开：行内车辆列表与绑定 =====
-    const rowVehicles = reactive({})
-    const rowVehiclesLoading = reactive({})
-    const rowVehicleInput = reactive({})
-
-    const handleExpandChange = async (row) => {
-      if (!row) return
-      await loadRowVehicles(row.id)
-    }
-
-    const loadRowVehicles = async (userId) => {
-      rowVehiclesLoading[userId] = true
-      try {
-        const resp = await getUserVehicles(userId)
-        const arr = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : [])
-        rowVehicles[userId] = arr || []
-      } catch (e) {
-        rowVehicles[userId] = []
-      } finally {
-        rowVehiclesLoading[userId] = false
-      }
-    }
-
-    const addRowVehicle = async (userId) => {
-      const plate = (rowVehicleInput[userId] || '').trim()
-      if (!plate) {
-        ElMessage.warning('请输入车牌号码')
-        return
-      }
-      try {
-        await bindUserVehicle(userId, { license_plate: plate })
-        ElMessage.success('车辆绑定成功')
-        rowVehicleInput[userId] = ''
-        await loadRowVehicles(userId)
-      } catch (e) {
-        ElMessage.error('车辆绑定失败')
-      }
-    }
-
-    const removeRowVehicle = async (userId, licensePlate) => {
-      try {
-        await unbindUserVehicle(userId, licensePlate)
-        ElMessage.success('已解除绑定')
-        await loadRowVehicles(userId)
-      } catch (e) {
-        ElMessage.error('解除绑定失败')
-      }
-    }
-
     // 移除VIP管理逻辑
 
 
@@ -801,21 +708,7 @@ export default {
       activeUsers,
       blockedUsers,
       adminUsers,
-      hasPermission,
-      // dialogs & forms
-      vehiclesDialogVisible,
-      currentUser,
-      vehicles,
-      vehicleForm,
-      addVehicle,
-      removeVehicle,
-      // row expand vehicles
-      rowVehicles,
-      rowVehiclesLoading,
-      rowVehicleInput,
-      handleExpandChange,
-      addRowVehicle,
-      removeRowVehicle
+      hasPermission
     }
   }
 }
@@ -1723,31 +1616,7 @@ export default {
   box-shadow: var(--shadow-md);
 }
 
-/* 展开面板样式 */
-.expand-panel {
-  padding: 12px;
-  background: var(--bg-primary);
-  border: 1px dashed var(--border-light);
-  border-radius: var(--border-radius-md);
-}
-.expand-title {
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-}
-.expand-tools {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 8px;
-}
-.expand-content {
-  min-height: 40px;
-}
-.vehicle-tags {
-  display: flex;
-  flex-wrap: wrap;
-}
+
 
 /* 统一页头布局（补充） */
 .header-content {

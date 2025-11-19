@@ -120,7 +120,7 @@ export function register(data) {
     method: 'post',
     data: {
       username: data.username,
-      phone_number: data.phone,
+      phone_number: data.phone,  // 修正字段名，后端期望的是phone_number
       email: data.email,
       nickname: data.nickname,
       password: data.password
@@ -163,35 +163,7 @@ export function getUserDetail(userId) {
   })
 }
 
-// ===== 用户-车辆绑定相关 =====
-export function getUserVehicles(userId) {
-  return request({
-    url: `/users/${userId}/vehicles`,
-    method: 'get'
-  })
-}
 
-export function bindUserVehicle(userId, data) {
-  return request({
-    url: `/users/${userId}/vehicles`,
-    method: 'post',
-    data
-  })
-}
-
-export function unbindUserVehicle(userId, licensePlate) {
-  return request({
-    url: `/users/${userId}/vehicles/${licensePlate}`,
-    method: 'delete'
-  })
-}
-
-export function getUserByLicensePlate(licensePlate) {
-  return request({
-    url: `/users/by-license-plate/${licensePlate}`,
-    method: 'get'
-  })
-}
 
 // ===== 我的车辆（当前用户） =====
 export function getMyVehicles(options = {}) {
@@ -229,26 +201,3 @@ export function removeMyVehicle(vehicleId) {
 }
 
 // 已移除管理端VIP相关API：getVip、createVip、updateVip、deleteVip
-
-// ===== 黑名单管理相关 =====
-export function getBlacklist(userId) {
-  return request({
-    url: `/users/${userId}/blacklist`,
-    method: 'get'
-  })
-}
-
-export function addBlacklist(userId, data) {
-  return request({
-    url: `/users/${userId}/blacklist`,
-    method: 'post',
-    data
-  })
-}
-
-export function removeBlacklist(userId) {
-  return request({
-    url: `/users/${userId}/blacklist`,
-    method: 'delete'
-  })
-}

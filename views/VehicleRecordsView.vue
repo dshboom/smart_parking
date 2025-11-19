@@ -1,218 +1,134 @@
 <template>
   <div class="vehicle-records-container modern-container">
-    <!-- 现代化页面标题 -->
-    <div class="page-header modern-header">
-      <div class="header-content">
-        <div class="title-section">
-          <h2 class="page-title">车辆进出记录</h2>
-          <p class="page-subtitle">Vehicle Entry & Exit Records</p>
-        </div>
-        <div class="header-actions">
-          <!-- 头部操作按钮已移除 -->
-        </div>
-      </div>
-    </div>
+    <!-- 页面标题已移除，保持极简 -->
 
-    <!-- 现代化搜索和筛选 -->
-    <div class="modern-card filter-section">
-      <div class="card-header">
-        <h3 class="card-title">
-          <el-icon><SearchIcon /></el-icon>
-          数据筛选
-        </h3>
-      </div>
-      <div class="card-content">
-        <el-row :gutter="20" class="modern-filter-form">
-          <el-col :span="6">
-            <el-input 
-              v-model="listQuery.license_plate" 
-              placeholder="搜索车牌号码" 
-              clearable
-              @keyup.enter="handleFilter"
-              @clear="handleFilter"
-              class="modern-input"
-            >
-              <template #prefix>
-                <el-icon><SearchIcon /></el-icon>
-              </template>
-            </el-input>
-          </el-col>
-          <el-col :span="4">
-            <el-select 
-              v-model="listQuery.status" 
-              placeholder="车辆状态" 
-              clearable 
-              @change="handleFilter"
-              class="modern-select"
-            >
-              <el-option label="全部" value="" />
-              <el-option label="在场内" value="in" />
-              <el-option label="已离场" value="out" />
-            </el-select>
-          </el-col>
-          <el-col :span="6">
-            <el-date-picker
-              v-model="listQuery.dateRange"
-              type="daterange"
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-              format="YYYY-MM-DD"
-              value-format="YYYY-MM-DD"
-              @change="handleFilter"
-              class="modern-date-picker"
-              style="width: 100%"
-            />
-          </el-col>
-          <el-col :span="4">
-            <el-select 
-              v-model="listQuery.sort" 
-              placeholder="排序方式" 
-              clearable 
-              @change="handleFilter"
-              class="modern-select"
-            >
-              <el-option label="进入时间倒序" value="-entry_time" />
-              <el-option label="进入时间正序" value="+entry_time" />
-            </el-select>
-          </el-col>
-          <el-col :span="4" class="action-buttons">
-            <el-button type="primary" class="modern-btn search-btn" @click="handleFilter" :loading="listLoading">
-              <el-icon><SearchIcon /></el-icon>
-              搜索
-            </el-button>
-            <el-button class="modern-btn reset-btn" @click="handleReset">
-              <el-icon><Refresh /></el-icon>
-              重置
-            </el-button>
-          </el-col>
-        </el-row>
-      </div>
-    </div>
-
-    <!-- 现代化统计卡片 -->
-    <div class="stats-section">
-      <div class="stats-container">
-        <div class="stat-card">
-          <div class="stat-icon total">
-            <el-icon><ListIcon /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ total }}</div>
-            <div class="stat-label">总记录数</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon enter">
-            <el-icon><CircleCheckIcon /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ stats.inParking }}</div>
-            <div class="stat-label">在场车辆</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon exit">
-            <el-icon><CircleCloseIcon /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ stats.exited }}</div>
-            <div class="stat-label">已离场</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon revenue">
-            <el-icon><ClockIcon /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ stats.todayRecords }}</div>
-            <div class="stat-label">今日记录</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 现代化表格 -->
-    <div class="modern-card table-section">
-      <div class="card-header">
-        <h3 class="card-title">
-          <el-icon><ListIcon /></el-icon>
-          车辆记录列表
-        </h3>
-        <div class="card-actions">
-        </div>
-      </div>
-      <div class="card-content" v-loading="listLoading">
-        <el-table
-          :data="list"
-          class="modern-table"
-          :row-class-name="tableRowClassName"
-          @sort-change="sortChange"
-          style="width: 100%"
+    <!-- 扁平化数据筛选 -->
+    <div class="filter-section">
+      <!-- 第一行：基础筛选 -->
+      <div class="filter-bar">
+        <el-input 
+          v-model="listQuery.license_plate" 
+          placeholder="搜索车牌号码" 
+          clearable
+          @keyup.enter="handleFilter"
+          @clear="handleFilter"
+          class="filter-input"
+        />
+        <el-select 
+          v-model="listQuery.status" 
+          placeholder="车辆状态" 
+          clearable 
+          @change="handleFilter"
+          class="filter-select"
         >
-          <el-table-column label="序号" type="index" width="80" align="center">
-            <template #default="scope">
-              <span class="index-number">{{ scope.$index + 1 }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="车牌号码" prop="license_plate" min-width="120" align="center">
-            <template #default="scope">
-              <div class="license-plate-cell">
-                <el-icon><VanIcon /></el-icon>
-                <span class="plate-text">{{ scope.row.license_plate }}</span>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" prop="status" width="120" align="center">
-            <template #default="scope">
-              <el-tag 
-                :type="scope.row.is_in_parking ? 'success' : 'info'"
-                class="status-tag"
-                :class="{ 'in-parking': scope.row.is_in_parking, 'exited': !scope.row.is_in_parking }"
-              >
-                <el-icon v-if="scope.row.is_in_parking"><CircleCheckIcon /></el-icon>
-                <el-icon v-else><CircleCloseIcon /></el-icon>
-                {{ scope.row.is_in_parking ? '在场内' : '已离场' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="进入时间" prop="entry_time" width="180" align="center" sortable="custom">
-            <template #default="scope">
-              <div class="time-cell">
-                <el-icon><ClockIcon /></el-icon>
-                <span>{{ scope.row.entry_time }}</span>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="离开时间" prop="exit_time" width="180" align="center">
-            <template #default="scope">
-              <div class="time-cell" v-if="scope.row.exit_time">
-                <el-icon><ClockIcon /></el-icon>
-                <span>{{ scope.row.exit_time }}</span>
-              </div>
-              <span v-else class="no-data">在场内</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="停车时长" width="150" align="center">
-            <template #default="scope">
-              <div class="duration-cell" v-if="scope.row.parking_duration">
-                <el-icon><ClockIcon /></el-icon>
-                <span>{{ scope.row.parking_duration }}</span>
-              </div>
-              <span v-else-if="scope.row.is_in_parking" style="color: #67c23a;">在场内</span>
-              <span v-else class="no-data">-</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="120" align="center" fixed="right">
-            <template #default="scope">
-              <el-button type="primary" class="modern-btn action-btn" @click="handleViewDetails(scope.row)">
-                <el-icon><ViewIcon /></el-icon>
-                详情
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+          <el-option label="全部" value="" />
+          <el-option label="在场内" value="in" />
+          <el-option label="已离场" value="out" />
+        </el-select>
+        <div class="filter-actions">
+          <el-button type="primary" @click="handleFilter" :loading="listLoading" class="search-btn">
+            搜索
+          </el-button>
+          <el-button @click="handleReset" class="reset-btn">
+            重置
+          </el-button>
+        </div>
       </div>
+      
+      <!-- 第二行：日期筛选 -->
+      <div class="filter-date-row">
+        <el-date-picker
+          v-model="listQuery.dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          format="YYYY-MM-DD"
+          value-format="YYYY-MM-DD"
+          @change="handleFilter"
+          class="filter-date"
+        />
+      </div>
+    </div>
+
+    <!-- 扁平化统计卡片 -->
+    <div class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-value">{{ total }}</div>
+          <div class="stat-label">总记录数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">{{ stats.inParking }}</div>
+          <div class="stat-label">在场车辆</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">{{ stats.exited }}</div>
+          <div class="stat-label">已离场</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">{{ stats.todayRecords }}</div>
+          <div class="stat-label">今日记录</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 扁平化表格 -->
+    <div class="table-container">
+      <el-table
+        :data="list"
+        class="clean-table"
+        :row-class-name="tableRowClassName"
+        @sort-change="sortChange"
+        style="width: 100%"
+      >
+        <el-table-column label="序号" type="index" width="80" align="center">
+          <template #default="scope">
+            <span class="index-text">{{ scope.$index + 1 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="车牌号码" prop="license_plate" min-width="120" align="center">
+          <template #default="scope">
+            <span class="plate-text">{{ scope.row.license_plate }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" prop="status" width="100" align="center">
+          <template #default="scope">
+            <span :class="['status-badge', scope.row.is_in_parking ? 'status-in' : 'status-out']">
+              {{ scope.row.is_in_parking ? '在场内' : '已离场' }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="时间" prop="entry_time" min-width="260" align="center" sortable="custom">
+          <template #default="scope">
+            <span class="time-range">
+              {{ scope.row.entry_time }}
+              <template v-if="scope.row.exit_time">
+                → {{ scope.row.exit_time }}
+              </template>
+              <template v-else>
+                → 在场内
+              </template>
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="停车时长" width="140" align="center">
+          <template #default="scope">
+            <span v-if="scope.row.parking_duration" class="duration-text">
+              {{ scope.row.parking_duration }}
+            </span>
+            <span v-else-if="scope.row.is_in_parking" class="duration-in">在场内</span>
+            <span v-else class="duration-empty">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" align="center" fixed="right">
+          <template #default="scope">
+            <el-button type="text" @click="handleViewDetails(scope.row)" class="action-link">
+              详情
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
 
     <!-- 现代化分页 -->
@@ -364,13 +280,13 @@ export default {
           : (Array.isArray(resp?.records) ? resp.records : [])
         // 后端已按进入时间倒序，若选择正序则在当前页内反向排序
         let mapped = rawList.map(r => {
-          const licensePlate = r.license_plate || r.licensePlate
+          const licensePlate = r.license_plate_snapshot || r.license_plate || r.licensePlate
           const entry = r.entry_time || r.entryTime
           const exit = r.exit_time || r.exitTime
-          const isIn = typeof r.is_in_parking !== 'undefined' ? r.is_in_parking : r.isInParking
+          const isIn = typeof r.is_in_parking !== 'undefined' ? r.is_in_parking : (exit == null)
           return {
             id: r.id,
-            license_plate: licensePlate,
+            license_plate: licensePlate || '-',
             entry_time: entry ? formatDateTime(entry) : null,
             exit_time: exit ? formatDateTime(exit) : null,
             parking_duration: exit ? computeDuration(entry, exit) : null,
@@ -527,6 +443,16 @@ export default {
 <style scoped>
 @import '@/assets/styles/modern-theme.css';
 
+/* 修复Element Plus对话框导致的滚动锁定问题 */
+:deep(body.el-popup-parent--hidden) {
+  overflow: auto !important;
+  position: static !important;
+}
+
+:deep(.el-popup-parent--hidden) {
+  overflow: auto !important;
+}
+
 .vehicle-records-container {
   padding: 20px;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
@@ -537,8 +463,8 @@ export default {
   box-shadow: 
     0 10px 40px rgba(0, 0, 0, 0.1),
     0 2px 8px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
   position: relative;
+  overflow: visible; /* 修复滚动问题 */
 }
 
 .vehicle-records-container::before {
@@ -616,146 +542,171 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-/* 现代化筛选区域 */
+/* 扁平化数据筛选 */
 .filter-section {
   margin-bottom: 24px;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 
-    0 4px 20px rgba(0, 0, 0, 0.08),
-    0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  transition: all 0.4s ease;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e6e8eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
 }
 
-.card-header {
+.filter-bar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0 0 16px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #f0f2f5;
 }
 
-.card-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #2c3e50;
-  margin: 0;
+.filter-date-row {
+  padding: 16px;
+  background: #fafbfc;
+}
+
+.filter-input,
+.filter-select {
+  min-width: 160px;
+}
+
+.filter-date-row .filter-date {
+  min-width: 320px;
+}
+
+.filter-actions {
+  margin-left: auto;
   display: flex;
-  align-items: center;
   gap: 8px;
 }
 
-.card-content {
-  padding: 0;
-}
-
-.modern-filter-form {
-  align-items: center;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
 .search-btn {
-  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
-  border: none;
-  color: white;
-  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.3);
-  transition: all 0.3s ease;
+  background: #409eff;
+  border: 1px solid #409eff;
+  color: #fff;
+  transition: background 0.2s ease;
 }
 
 .search-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(82, 196, 26, 0.4);
+  background: #66b1ff;
+  border-color: #66b1ff;
 }
 
 .reset-btn {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border: 1px solid #dcdfe6;
   color: #606266;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .reset-btn:hover {
-  background: rgba(255, 255, 255, 1);
-  border-color: #409eff;
+  background: #f5f7fa;
+  border-color: #c0c4cc;
   color: #409eff;
-  transform: translateY(-1px);
 }
 
-/* 现代化表格 */
-.table-section {
+/* 扁平化表格 */
+.table-container {
   margin-bottom: 24px;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 
-    0 4px 20px rgba(0, 0, 0, 0.08),
-    0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  transition: all 0.4s ease;
-}
-
-.card-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.export-btn {
-  background: linear-gradient(135deg, #409eff 0%, #5da8ff 100%);
-  border: none;
-  color: white;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
-  transition: all 0.3s ease;
-}
-
-.export-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.4);
-}
-
-.modern-table {
-  background: transparent;
+  background: #ffffff;
   border-radius: 12px;
+  border: 1px solid #e6e8eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.modern-table :deep(.el-table__header-wrapper) {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+.clean-table :deep(.el-table__header-wrapper) {
+  background: #fafbfc;
+  border-bottom: 1px solid #e6e8eb;
 }
 
-.modern-table :deep(.el-table__header th) {
+.clean-table :deep(.el-table__header th) {
   background: transparent;
-  color: #2c3e50;
+  color: #1f2329;
   font-weight: 600;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 16px 12px;
+  font-size: 14px;
+  padding: 14px 12px;
+  border: none;
 }
 
-.modern-table :deep(.el-table__body tr) {
-  background: rgba(255, 255, 255, 0.9);
-  transition: all 0.3s ease;
+.clean-table :deep(.el-table__body tr) {
+  background: #ffffff;
+  transition: background 0.2s ease;
 }
 
-.modern-table :deep(.el-table__body tr:hover) {
-  background: rgba(240, 247, 255, 0.95);
-  transform: scale(1.005);
+.clean-table :deep(.el-table__body tr:hover) {
+  background: #f5f7fa;
 }
 
-.modern-table :deep(.el-table__body td) {
-  color: #2c3e50;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 16px 12px;
+.clean-table :deep(.el-table__body td) {
+  color: #1f2329;
+  font-size: 14px;
+  padding: 12px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+/* 表格内容样式 */
+.index-text {
+  color: #909399;
+  font-size: 13px;
+}
+
+.plate-text {
+  font-weight: 500;
+  color: #1f2329;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-in {
+  background: #f0f9ff;
+  color: #1890ff;
+  border: 1px solid #b3d8ff;
+}
+
+.status-out {
+  background: #f6f6f6;
+  color: #666;
+  border: 1px solid #d9d9d9;
+}
+
+.time-range {
+  color: #666;
+  font-size: 13px;
+}
+
+.duration-text {
+  color: #666;
+  font-size: 13px;
+}
+
+.duration-in {
+  color: #52c41a;
+  font-size: 13px;
+}
+
+.duration-empty {
+  color: #c0c4cc;
+  font-size: 13px;
+}
+
+.action-link {
+  color: #409eff;
+  font-size: 13px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.action-link:hover {
+  color: #66b1ff;
+  text-decoration: underline;
 }
 
 /* 表格行样式 */
@@ -962,107 +913,45 @@ export default {
   border-color: rgba(64, 158, 255, 0.2);
 }
 
-/* 统计卡片基础样式 */
+/* 扁平化统计卡片 */
 .stats-section {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: 24px;
 }
 
-.stats-container {
+.stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
 }
 
-.stat-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+.stat-item {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px 16px;
+  text-align: center;
+  border: 1px solid #e6e8eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease;
 }
 
-.stat-card:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: var(--shadow-xl);
+.stat-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--primary-gradient);
-  transform: scaleX(0);
-  transition: transform var(--transition-normal) ease;
-}
-
-.stat-card:hover::before {
-  transform: scaleX(1);
-}
-
-.stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: var(--border-radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: var(--spacing-lg);
-  font-size: var(--font-size-xl);
-  transition: all var(--transition-normal) ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-icon.total {
-  background: linear-gradient(135deg, #409eff 0%, #5da8ff 100%);
-  color: white;
-}
-
-.stat-icon.enter {
-  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
-  color: white;
-}
-
-.stat-icon.exit {
-  background: linear-gradient(135deg, #faad14 0%, #ffc53d 100%);
-  color: white;
-}
-
-.stat-icon.revenue {
-  background: linear-gradient(135deg, #722ed1 0%, #9254de 100%);
-  color: white;
-}
-
-.stat-card:hover .stat-icon {
-  transform: rotate(10deg) scale(1.1);
-  box-shadow: var(--shadow-lg);
-}
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-number {
+.stat-value {
   font-size: 28px;
-  font-weight: 700;
-  color: #2c3e50;
-  margin-bottom: 4px;
+  font-weight: 600;
+  color: #1f2329;
+  line-height: 1;
+  margin-bottom: 6px;
 }
 
 .stat-label {
-  font-size: 14px;
-  color: #7f8c8d;
-  font-weight: 500;
+  font-size: 13px;
+  color: #646a73;
+  font-weight: 400;
 }
+
 
 /* 响应式设计 */
 @media screen and (max-width: 768px) {

@@ -22,7 +22,7 @@
       background: white !important;
       border-radius: 20px !important;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
-      overflow: hidden !important;
+      overflow: visible !important;
       position: relative !important;
     }
     

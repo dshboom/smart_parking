@@ -52,44 +52,6 @@
       </div>
     </div>
   </div>
-
-  <div class="exit-section">
-    <div class="exit-header">
-      <h2>🚙 车辆出场</h2>
-      <p>请选择已入场车辆进行出场</p>
-    </div>
-    <div class="exit-form">
-      <div class="in-parking-list" v-if="activeRecords.length">
-        <div 
-          v-for="v in activeRecords" 
-          :key="v.id" 
-          class="vehicle-item"
-        >
-          <div class="vehicle-info">
-            <div class="plate">{{ v.license_plate }}</div>
-            <div class="entry-time">入场：{{ formatTime(v.entry_time) }}</div>
-          </div>
-          <el-button 
-            type="danger"
-            size="small"
-            :loading="exitLoading"
-            @click="handleExitItem(v)"
-          >
-            确认出场
-          </el-button>
-        </div>
-      </div>
-      <el-empty v-else description="当前无入场车辆" />
-    </div>
-    <div class="exit-tips">
-      <el-alert
-        title="出场提示"
-        type="info"
-        :closable="false"
-        description="选择列表中的车辆点击出场，系统将记录出场时间"
-      />
-    </div>
-  </div>
 </template>
 
 <script>
@@ -144,6 +106,7 @@ export default {
         ])
         const recentList = Array.isArray(recentResp?.data) ? recentResp.data : (Array.isArray(recentResp) ? recentResp : [])
         let activeList = Array.isArray(activeResp?.data) ? activeResp.data : (Array.isArray(activeResp) ? activeResp : [])
+        activeList = activeList.filter(r => String(r?.status).toUpperCase() === 'PARKED')
         // 适配字段：为展示与出场操作补充 license_plate 与 space_id
         // 按停车场分组，查询占用车位并回填 space_id
         const byLot = new Map()
@@ -231,6 +194,7 @@ export default {
           const bal = await getMyBalance()
           const amt = Number(resp?.amount || 0)
           this.$message.success(`车辆 ${record?.license_plate || ''} 已结算 ¥${amt.toFixed(2)}，余额 ¥${Number(bal?.balance || 0).toFixed(2)}`)
+          this.activeRecords = this.activeRecords.filter(r => r.id !== record.id)
         }
         await this.loadRecords()
       } catch (error) {

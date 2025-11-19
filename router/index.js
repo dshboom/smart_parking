@@ -14,13 +14,12 @@ export const constantRoutes = [
   },
   {
   },
-  // 管理后台路由
   {
     path: '/admin',
     component: AdminLayout,
     meta: { 
       requiresAuth: true,
-      roles: ['admin'] // 只有管理员可以访问
+      roles: ['admin']
     },
     children: [
       {
@@ -36,7 +35,6 @@ export const constantRoutes = [
           title: '仪表盘'
         }
       },
-      // Removed empty route object
       {
         path: 'users',
         name: 'admin-users',
@@ -94,7 +92,6 @@ export const constantRoutes = [
       },
     ]
   },
-  // 账户设置
   {
     path: '/account/profile',
     name: 'account-profile',
@@ -104,7 +101,6 @@ export const constantRoutes = [
       permissions: ['user:profile']
     }
   },
-  // 移动端路由
   ...mobileRoutes
 ]
 
@@ -118,7 +114,7 @@ export function resetRouter() {
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: constantRoutes
   })
-  router.matcher = newRouter.matcher // reset router
+  router.matcher = newRouter.matcher
 }
 
 export default router

@@ -36,18 +36,7 @@ export function settleParkingFee(payload) {
   return request({ url: '/api/v1/wallet/settle', method: 'post', params })
 }
 
-// ===== 管理员支付管理相关 =====
-export function getAdminPaymentOverview() {
-  return request({ url: '/payments/admin/stats/overview', method: 'get' })
-}
 
-export function getAdminTransactions(params = {}) {
-  return request({ url: '/payments/admin/transactions', method: 'get', params })
-}
-
-export function refundTransaction(data) {
-  return request({ url: '/payments/refund', method: 'post', data })
-}
 
 // ===== /api/v1 支付接口（与后端对齐） =====
 export function createPayment(data) {

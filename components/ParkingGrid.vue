@@ -18,6 +18,8 @@
         <span v-else-if="cell.type === 'parking'" class="cell-text">P</span>
       </div>
       <div v-if="isInPath(cell.row, cell.col)" class="path-indicator"></div>
+      <div v-if="isStart(cell.row, cell.col)" class="marker-indicator"></div>
+      <div v-if="isEnd(cell.row, cell.col)" class="marker-indicator"></div>
     </div>
   </div>
 </template>
@@ -53,6 +55,14 @@ export default {
       required: true
     },
     highlightCoord: {
+      type: Object,
+      default: null
+    },
+    startCoord: {
+      type: Object,
+      default: null
+    },
+    endCoord: {
       type: Object,
       default: null
     }
@@ -149,6 +159,12 @@ export default {
     const isInPath = (row, col) => {
       return props.path.some(p => p.row === row && p.col === col)
     }
+    const isStart = (row, col) => {
+      return props.startCoord && props.startCoord.row === row && props.startCoord.col === col
+    }
+    const isEnd = (row, col) => {
+      return props.endCoord && props.endCoord.row === row && props.endCoord.col === col
+    }
 
     const handleCellClick = (row, col) => {
       emit('cell-click', { row, col })
@@ -166,6 +182,8 @@ export default {
       getTooltipContent,
       getCellClasses,
       isInPath,
+      isStart,
+      isEnd,
       handleCellClick,
       handleCellHover,
       containerHeight
@@ -281,6 +299,20 @@ export default {
   border-radius: 50%;
   transform: translate(-50%, -50%);
   box-shadow: 0 0 6px rgba(255, 77, 79, 0.6);
+  pointer-events: none;
+}
+
+.marker-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  background-color: #ff4d4f;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(255, 77, 79, 0.8);
+  border: 2px solid #fff;
   pointer-events: none;
 }
 </style>

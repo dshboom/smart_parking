@@ -10,6 +10,30 @@ import { wsManager } from '@/utils/websocket'
 import { permissionDirective, roleDirective } from '@/utils/permission'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
+// 修复Element Plus对话框导致的滚动锁定问题
+const observer = new MutationObserver(() => {
+  if (document.body.classList.contains('el-popup-parent--hidden')) {
+    // 当对话框打开时，保持滚动功能
+    document.body.style.overflow = 'auto'
+    document.body.style.position = 'static'
+  }
+})
+observer.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+
+// 添加全局CSS样式来覆盖Element Plus的滚动锁定
+const style = document.createElement('style')
+style.textContent = `
+  body.el-popup-parent--hidden {
+    overflow: auto !important;
+    position: static !important;
+  }
+  
+  .el-popup-parent--hidden {
+    overflow: auto !important;
+  }
+`
+document.head.appendChild(style)
+
 const app = createApp(App)
 
 // 注册全局权限指令

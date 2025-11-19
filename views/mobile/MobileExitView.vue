@@ -37,26 +37,27 @@
       </el-card>
     </div>
 
-    <div class="reservation-card" v-if="reservations && reservations.length">
-      <el-card shadow="hover">
-        <div class="exit-info">
-          <div class="row" v-for="r in reservations" :key="r.id">
-            <span class="label">预约车位</span>
-            <span class="value">#{{ r.space_id || '-' }}</span>
+    <div v-else class="empty-container">
+      <el-empty description="请先在入场后进行停车" />
+      <div v-if="billingRule" class="billing-rule-info">
+        <el-card shadow="never">
+          <template v-slot:header>
+<div  class="rule-header">
+            <span>计费规则</span>
           </div>
-          <div class="row" v-for="r in reservations" :key="r.id + '-exp'">
-            <span class="label">到期时间</span>
-            <span class="value">{{ formatTime(r.expires_at) }}</span>
+</template>
+          <div class="rule-content">
+            <div v-for="(value, key) in billingRuleDisplayItems" :key="key" class="rule-item">
+              <span class="rule-label">{{ value.label }}：</span>
+              <span class="rule-value">{{ value.prefix }}{{ billingRule[key] }}{{ value.suffix }}</span>
+            </div>
+            <div v-if="billingRuleDisplayItems.length === 0" class="rule-item">
+              <span class="rule-value">暂无计费规则信息</span>
+            </div>
           </div>
-          <div class="row" v-for="r in reservations" :key="r.id + '-fee'">
-            <span class="label">预约费用</span>
-            <span class="value fee">¥{{ formatAmount(r.reservation_fee) }}</span>
-          </div>
-        </div>
-      </el-card>
+        </el-card>
+      </div>
     </div>
-
-    <el-empty v-else description="请先在入场后进行停车或预约车位" />
   </div>
 </template>
 
@@ -64,7 +65,7 @@
 import { getMyParkingHistory } from '@/api/user'
 import { getBillingRule } from '@/api/pricing'
 import { getUserBalance } from '@/api/payments'
-import { exitAndSettle, getParkingSpaces, getMyReservations } from '@/api/parking'
+import { exitAndSettle, getParkingSpaces } from '@/api/parking'
 import { wsManager } from '@/utils/websocket'
 import { getToken } from '@/utils/auth'
 
@@ -80,7 +81,9 @@ export default {
       balanceText: '',
       wsOffStarted: null,
       wsOffEnded: null,
-      reservations: []
+      billingRule: null,
+      defaultLotId: null,
+      billingRuleTimer: null
     }
   },
   computed: {
@@ -90,6 +93,53 @@ export default {
       const now = new Date()
       const hours = Math.max((now - entry) / 3600000, 0)
       return `${hours.toFixed(2)} 小时`
+    },
+    billingRuleDisplayItems() {
+      if (!this.billingRule) return []
+      
+      // 完全根据后端返回的数据来显示，不预设任何字段
+      const items = []
+      const rule = this.billingRule
+      
+      // 遍历后端返回的所有字段
+      Object.keys(rule).forEach(key => {
+        const value = rule[key]
+        
+        // 跳过内部字段和空值
+        if (key.includes('id') || key.includes('time') || key === 'rule_name' || value === null || value === undefined) {
+          return
+        }
+        
+        // 根据字段名动态生成显示标签和格式
+        let label = key
+        let prefix = ''
+        let suffix = ''
+        
+        // 智能识别字段类型（完全基于字段名，不硬编码业务逻辑）
+        if (key.includes('minute')) {
+          label = '免费时长'
+          suffix = ' 分钟'
+        } else if (key.includes('hourly') || key.includes('rate')) {
+          label = '小时费率'
+          prefix = '¥'
+          suffix = '/小时'
+        } else if (key.includes('daily') || key.includes('cap')) {
+          label = '每日封顶'
+          prefix = '¥'
+        } else if (key.includes('fee') || key.includes('price')) {
+          label = '费用'
+          prefix = '¥'
+        }
+        
+        items.push({
+          key,
+          label,
+          prefix,
+          suffix
+        })
+      })
+      
+      return items
     }
   },
   async mounted() {
@@ -112,21 +162,36 @@ export default {
   unmounted() {
     try { if (typeof this.wsOffStarted === 'function') this.wsOffStarted() } catch (e) {}
     try { if (typeof this.wsOffEnded === 'function') this.wsOffEnded() } catch (e) {}
+    // 清除定时器
+    if (this.billingRuleTimer) {
+      clearInterval(this.billingRuleTimer)
+      this.billingRuleTimer = null
+    }
   },
   onActivated() {
     // 激活时强制刷新
     this.loadAll()
+    // 设置计费规则定时刷新（每30秒更新一次）
+    if (this.billingRuleTimer) {
+      clearInterval(this.billingRuleTimer)
+    }
+    this.billingRuleTimer = setInterval(() => {
+      if (!this.current) {
+        this.loadDefaultBillingRule()
+      }
+    }, 30000)
   },
   methods: {
     async loadAll() {
       this.loading = true
       try {
-        const [currentList, balance, reservations] = await Promise.all([
-          getMyParkingHistory({ status: 'active', limit: 1 }),
-          getUserBalance().catch(() => ({ balance: 0 })),
-          getMyReservations({ status_value: 'ACTIVE', limit: 10 }).catch(() => [])
+        const [currentList, balance] = await Promise.all([
+          getMyParkingHistory({ status: 'active', limit: 50 }),
+          getUserBalance().catch(() => ({ balance: 0 }))
         ])
-        const curObj = Array.isArray(currentList?.data) ? currentList.data[0] : (Array.isArray(currentList) ? currentList[0] : null)
+        const listArr = Array.isArray(currentList?.data) ? currentList.data : (Array.isArray(currentList) ? currentList : [])
+        const activeList = listArr.filter(r => String(r?.status).toUpperCase() === 'PARKED')
+        const curObj = activeList.length ? activeList[0] : null
         // 解析当前活动记录并补充 space_id（用于释放）
         if (curObj && curObj.parking_lot_id) {
           try {
@@ -142,7 +207,12 @@ export default {
         }
         const bal = Number(balance?.balance ?? 0)
         this.balanceText = `余额：¥${bal.toFixed(2)}`
-        this.reservations = Array.isArray(reservations?.data) ? reservations.data : (Array.isArray(reservations) ? reservations : [])
+        
+        // 如果没有当前停车记录，获取默认计费规则
+        if (!this.current) {
+          await this.loadDefaultBillingRule()
+        }
+        
         await this.refreshPreview()
       } catch (e) {
         console.warn('加载出场数据失败：', e)
@@ -155,6 +225,10 @@ export default {
       if (!this.current?.parking_lot_id) { this.previewFee = '0.00'; return }
       try {
         const ruleResp = await getBillingRule(this.current.parking_lot_id)
+        // 保存完整的计费规则用于显示（不修改原始数据）
+        this.billingRule = ruleResp
+        
+        // 计算费用时使用默认值处理（仅用于计算逻辑）
         const freeMin = Number(ruleResp?.free_duration_minutes || 0)
         const hourly = Number(ruleResp?.hourly_rate || 0)
         const dailyCap = ruleResp?.daily_cap_rate != null ? Number(ruleResp.daily_cap_rate) : null
@@ -184,6 +258,23 @@ export default {
       const date = new Date(ts)
       return date.toLocaleString()
     },
+    async loadDefaultBillingRule() {
+      try {
+        // 获取停车场列表，使用第一个停车场的计费规则作为默认规则
+        const { getParkingLots } = await import('@/api/parking')
+        const lotsResp = await getParkingLots({ page: 1, limit: 1 })
+        const lots = Array.isArray(lotsResp?.data) ? lotsResp.data : (Array.isArray(lotsResp) ? lotsResp : [])
+        if (lots.length > 0) {
+          const ruleResp = await getBillingRule(lots[0].id)
+          // 完全使用后端返回的数据，不做任何处理
+          this.billingRule = ruleResp
+          this.defaultLotId = lots[0].id
+        }
+      } catch (e) {
+        console.warn('获取默认计费规则失败：', e)
+        this.billingRule = null
+      }
+    },
     formatAmount(a) {
       const num = Number(a || 0)
       return num.toFixed(2)
@@ -209,6 +300,7 @@ export default {
         } else {
           const amt = Number(resp?.amount || this.previewFee || 0)
           this.$message.success(`结算成功，支付金额：¥${amt.toFixed(2)}`)
+          this.current = null
         }
         await this.loadAll()
       } catch (error) {
@@ -245,4 +337,36 @@ export default {
 .exit-actions { margin-top: 12px; }
 .payment-options { margin-top: 8px; color: #666; }
 .balance { margin-left: 8px; }
+
+.empty-container {
+  padding: 0 12px;
+}
+.billing-rule-info {
+  margin-top: 20px;
+  .rule-header {
+    font-weight: 600;
+    color: #333;
+  }
+  .rule-content {
+    padding: 15px 0;
+  }
+  .rule-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+  .rule-label {
+    color: #666;
+    font-size: 14px;
+  }
+  .rule-value {
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
 </style>

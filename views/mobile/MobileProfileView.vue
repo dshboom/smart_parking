@@ -29,13 +29,6 @@
     
     <div class="menu-list">
       <div class="menu-section">
-        <h4>我的服务</h4>
-        <div class="menu-items">
-          
-        </div>
-      </div>
-      
-      <div class="menu-section">
         <h4>账户设置</h4>
         <div class="menu-items">
           <div class="menu-item" @click="goToPayment">
@@ -43,7 +36,7 @@
               <el-icon><Wallet /></el-icon>
             </div>
             <div class="menu-content">
-              <span>支付设置</span>
+              <span>账户余额</span>
               <el-icon><ArrowRight /></el-icon>
             </div>
           </div>

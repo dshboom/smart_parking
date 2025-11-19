@@ -21,8 +21,7 @@ export function usePathfinding(grid, occupiedSpots, GRID_ROWS, GRID_COLS) {
       if (newRow >= 0 && newRow < GRID_ROWS && newCol >= 0 && newCol < GRID_COLS) {
         const cellType = grid.value[newRow][newCol]
         const isGoal = goal && newRow === goal.row && newCol === goal.col
-        // 仅允许在道路/入口/出口上行走；允许最终一步进入目标车位
-        const walkable = (cellType === 'road' || cellType === 'entrance' || cellType === 'exit') || (isGoal && cellType === 'parking')
+        const walkable = cellType === 'road'
         if (walkable) {
           neighbors.push({ row: newRow, col: newCol })
         }

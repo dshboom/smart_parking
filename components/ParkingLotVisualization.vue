@@ -29,6 +29,8 @@
             :GRID_ROWS="GRID_ROWS"
             :GRID_COLS="GRID_COLS"
             :highlight-coord="highlightCoord"
+            :start-coord="startCoordComputed"
+            :end-coord="endCoordComputed"
             @cell-click="handleCellClick"
             @cell-hover="handleCellHover"
           />
@@ -145,6 +147,29 @@ export default {
       available_spaces: 0
     })
     const layoutDirty = ref(false)
+    let saveTimer = null
+    let saving = false
+    let needResave = false
+    const isRoad = (r, c) => grid.value[r]?.[c] === 'road'
+    const adjacentRoadOf = (coord) => {
+      const dirs = [
+        { row: -1, col: 0 },
+        { row: 1, col: 0 },
+        { row: 0, col: -1 },
+        { row: 0, col: 1 }
+      ]
+      for (const d of dirs) {
+        const nr = coord.row + d.row
+        const nc = coord.col + d.col
+        if (nr >= 0 && nr < GRID_ROWS && nc >= 0 && nc < GRID_COLS && isRoad(nr, nc)) {
+          return { row: nr, col: nc }
+        }
+      }
+      return null
+    }
+    const sanitizeRoadPath = (nodes) => Array.isArray(nodes) ? nodes.filter(n => isRoad(n.row, n.col)) : []
+    const startCoord = ref(null)
+    const endCoord = ref(null)
 
     // WebSocket 事件取消订阅引用
     let offMessage = null
@@ -277,23 +302,23 @@ export default {
           try {
             nav = await parkingApi.calculateNavigationPath(props.parkingLotId, start, target)
           } catch (_) {}
-          let navPath = Array.isArray(nav?.path) ? nav.path : []
-          const pathCellsValid = (nodes) => nodes && nodes.every((n, idx) => {
-            const t = grid.value[n.row]?.[n.col]
-            if (idx === nodes.length - 1) return t === 'parking'
-            return t === 'road' || t === 'entrance' || t === 'exit'
-          })
-          if (!pathCellsValid(navPath) || navPath.length === 0) {
-            const local = astar(start, target)
-            navPath = Array.isArray(local) ? local : []
+          let navPath = sanitizeRoadPath(Array.isArray(nav?.path) ? nav.path : [])
+          const goalRoad = adjacentRoadOf(target)
+          if (!goalRoad || navPath.length === 0) {
+            const local = astar(start, goalRoad || target)
+            navPath = sanitizeRoadPath(local)
           }
           path.value = navPath
+          startCoord.value = start
+          endCoord.value = target
           // 选中目标车位
           const space = coordToSpace.value.get(`${target.row},${target.col}`)
           selectedSpot.value = space || null
           ElMessage.success(`找到最近停车位: #${result.space_id}`)
         } else {
           path.value = []
+          startCoord.value = null
+          endCoord.value = null
           selectedSpot.value = null
           ElMessage.warning('未找到可用车位')
         }
@@ -318,12 +343,18 @@ export default {
     const findExitPath = (fromSpot) => {
       const fallback = { row: GRID_ROWS - 1, col: GRID_COLS - 1 }
       const exit = exitPosition.value || detectExitFromGrid() || fallback
-      const pathResult = astar(fromSpot, exit)
-      if (pathResult) {
-        path.value = pathResult
-        ElMessage.success(`找到出口路径！距离: ${pathResult.length - 1} 步`)
+      const goalRoad = adjacentRoadOf(exit)
+      const pathResult = astar(fromSpot, goalRoad || exit)
+      const sanitized = sanitizeRoadPath(pathResult)
+      if (sanitized && sanitized.length > 0) {
+        path.value = sanitized
+        startCoord.value = fromSpot
+        endCoord.value = exit
+        ElMessage.success(`找到出口路径！距离: ${sanitized.length} 步`)
       } else {
         ElMessage.warning('未找到到出口的路径')
+        startCoord.value = null
+        endCoord.value = null
       }
     }
 
@@ -357,8 +388,8 @@ export default {
           selectedSpot.value = space || null
         }
         
-        // 保存布局到后端
         layoutDirty.value = true
+        scheduleSave()
       } else {
         // 正常模式
         // 只读模式：在启用选择模式时允许点选空闲车位；同时保留对已占用车位的“到出口”导航
@@ -433,33 +464,77 @@ export default {
       }
     }
 
-    const saveLayout = async () => {
+    const saveLayout = async (silent = false) => {
       try {
-        await parkingApi.updateParkingLotLayout(props.parkingLotId, {
-          rows: grid.value.length,
-          cols: grid.value[0]?.length || GRID_COLS,
-          grid: grid.value,
-          entrance_position: entrancePosition.value || { row: 0, col: 0 },
-          exit_position: exitPosition.value || detectExitFromGrid() || { row: GRID_ROWS - 1, col: GRID_COLS - 1 }
-        })
+        await parkingApi.updateParkingLotLayout(
+          props.parkingLotId,
+          {
+            rows: grid.value.length,
+            cols: grid.value[0]?.length || GRID_COLS,
+            grid: grid.value,
+            entrance_position: entrancePosition.value || { row: 0, col: 0 },
+            exit_position: exitPosition.value || detectExitFromGrid() || { row: GRID_ROWS - 1, col: GRID_COLS - 1 }
+          },
+          { timeout: 30000, suppressErrorToast: silent }
+        )
         layoutDirty.value = false
-        ElMessage.success('布局已保存')
+        if (!silent) {
+          ElMessage.success('布局已保存')
+        }
       } catch (error) {
-        ElMessage.error('布局保存失败')
+        if (!silent) {
+          ElMessage.error('布局保存失败')
+        }
       }
+    }
+
+    const scheduleSave = () => {
+      if (saveTimer) {
+        clearTimeout(saveTimer)
+        saveTimer = null
+      }
+      saveTimer = setTimeout(async () => {
+        saveTimer = null
+        if (saving) {
+          needResave = true
+          return
+        }
+        saving = true
+        try {
+          await saveLayout(true)
+        } finally {
+          saving = false
+          if (needResave) {
+            needResave = false
+            scheduleSave()
+          }
+        }
+      }, 250)
     }
 
 
     const displayPath = computed(() => {
-      if (props.showPath && props.showPath.length > 0) {
-        return props.showPath.map(node => (
-          'row' in node && 'col' in node
-            ? { row: node.row, col: node.col }
-            : { row: node.y ?? node.row, col: node.x ?? node.col }
-        ))
+      const src = (props.showPath && props.showPath.length > 0)
+        ? props.showPath.map(node => (
+            'row' in node && 'col' in node
+              ? { row: node.row, col: node.col }
+              : { row: node.y ?? node.row, col: node.x ?? node.col }
+          ))
+        : path.value
+      const roads = sanitizeRoadPath(src)
+      const merged = []
+      const pushUnique = (n) => {
+        if (!n) return
+        const exists = merged.some(x => x.row === n.row && x.col === n.col)
+        if (!exists) merged.push(n)
       }
-      return path.value
+      pushUnique(startCoord.value)
+      for (const n of roads) pushUnique(n)
+      pushUnique(endCoord.value)
+      return merged
     })
+    const startCoordComputed = computed(() => (displayPath.value.length ? displayPath.value[0] : (startCoord.value || null)))
+    const endCoordComputed = computed(() => (displayPath.value.length ? displayPath.value[displayPath.value.length - 1] : (endCoord.value || null)))
 
     const isInPath = (row, col) => {
       return displayPath.value.some(node => node.row === row && node.col === col)
@@ -625,7 +700,9 @@ export default {
       isInPath,
       getCellClasses,
       getTooltipContent,
-      loadParkingLotData
+      loadParkingLotData,
+      startCoordComputed,
+      endCoordComputed
     }
   }
 }

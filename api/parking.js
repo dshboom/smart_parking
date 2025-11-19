@@ -159,11 +159,12 @@ export function getParkingLotLayout(parkingLotId) {
   })
 }
 
-export function updateParkingLotLayout(parkingLotId, layoutData) {
+export function updateParkingLotLayout(parkingLotId, layoutData, config = {}) {
   return request({
     url: `/api/v1/parking-lots/${parkingLotId}/layout`,
     method: 'put',
-    data: layoutData
+    data: layoutData,
+    ...config
   })
 }
 

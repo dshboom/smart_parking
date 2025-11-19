@@ -1,36 +1,23 @@
 <template>
   <div class="parking-management">
-    <div class="header-section">
-      <h1 class="page-title modern-header">停车场管理</h1>
-      <p class="page-subtitle">管理所有停车场信息</p>
-    </div>
-    
-    <div class="parking-lots-container modern-card">
-      <div class="table-header">
-        <h3 class="table-title">停车场列表</h3>
-        <div class="table-actions">
-            <el-button type="primary" @click="showCreateDialog = true" class="modern-btn" v-permission="'parking:add'">
-              <el-icon><Plus /></el-icon>
-              新建停车场
-            </el-button>
-        </div>
+    <div class="table-header">
+      <h3 class="table-title">停车场列表</h3>
+      <div class="table-actions">
+          <el-button type="primary" @click="showCreateDialog = true" class="add-parking-btn" v-permission="'parking:add'">
+            <el-icon><Plus /></el-icon>
+            新建停车场
+          </el-button>
       </div>
+    </div>
 
-      <div class="parking-lots-list" v-loading="loading">
+    <div class="table-wrapper" v-loading="loading">
         <el-table :data="parkingLots" style="width: 100%" class="modern-table">
           <el-table-column prop="id" label="ID" width="80" />
           <el-table-column prop="name" label="名称" min-width="150" />
-          <el-table-column prop="description" label="描述" min-width="200" />
+          <el-table-column prop="address" label="描述" min-width="200" />
           <el-table-column label="尺寸" width="120">
             <template #default="{ row }">
               <span class="size-text">{{ row.rows }} × {{ row.cols }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" width="100">
-            <template #default="{ row }">
-              <el-tag :type="row.is_active ? 'success' : 'info'" class="modern-tag">
-                {{ row.is_active ? '活跃' : '停用' }}
-              </el-tag>
             </template>
           </el-table-column>
           <el-table-column label="统计" width="150">
@@ -42,30 +29,16 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="可视化" width="100">
-            <template #default="{ row }">
-              <el-button 
-                type="info" 
-                size="small" 
-                @click="quickViewVisualization(row)" 
-                class="modern-btn-info-small"
-                v-permission="'parking:view'"
-              >
-                <el-icon><View /></el-icon>
-                预览
-              </el-button>
-            </template>
-          </el-table-column>
           <el-table-column label="操作" width="200" fixed="right">
             <template #default="{ row }">
-              <el-button type="primary" size="small" @click="viewParkingLot(row)" class="modern-btn-small">
-                查看
+              <el-button type="primary" size="small" @click="viewParkingLot(row)" class="action-btn view-btn">
+                <el-icon><View /></el-icon>
               </el-button>
-              <el-button type="warning" size="small" @click="editParkingLot(row)" class="modern-btn-warning-small" v-permission="'parking:edit'">
-                编辑
+              <el-button type="warning" size="small" @click="editParkingLot(row)" class="action-btn edit-btn" v-permission="'parking:edit'">
+                <el-icon><Edit /></el-icon>
               </el-button>
-              <el-button type="danger" size="small" @click="deleteParkingLot(row)" class="modern-btn-danger-small" v-permission="'parking:delete'">
-                删除
+              <el-button type="danger" size="small" @click="deleteParkingLot(row)" class="action-btn delete-btn" v-permission="'parking:delete'">
+                <el-icon><Delete /></el-icon>
               </el-button>
             </template>
           </el-table-column>
@@ -83,7 +56,6 @@
           @current-change="handleCurrentChange"
         />
       </div>
-    </div>
 
     <!-- Create/Edit Dialog -->
     <el-dialog
@@ -111,9 +83,6 @@
         <el-form-item label="列数" prop="cols">
           <el-input-number v-model="lotForm.cols" :min="5" :max="30" class="modern-input-number" />
         </el-form-item>
-        <el-form-item label="状态" prop="is_active">
-          <el-switch v-model="lotForm.is_active" class="modern-switch" />
-        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -126,27 +95,18 @@
     <!-- Parking Lot Detail Dialog -->
     <el-dialog
       v-model="showDetailDialog"
-      title="停车场详情"
       width="90%"
       top="5vh"
       class="modern-dialog"
+      :show-close="true"
+      :close-on-click-modal="true"
     >
       <div v-if="selectedLot" class="parking-lot-detail">
-        <el-tabs v-model="activeTab" class="modern-tabs">
-          <el-tab-pane label="可视化" name="visualization">
-            <ParkingLotVisualization 
-              :parking-lot-id="selectedLot.id" 
-              :read-only="false"
-              @space-selected="handleSpaceSelected"
-            />
-          </el-tab-pane>
-          <el-tab-pane label="停车位列表" name="spaces">
-            <ParkingSpacesList :parking-lot-id="selectedLot.id" />
-          </el-tab-pane>
-          <el-tab-pane label="统计信息" name="statistics">
-            <ParkingLotStatistics :parking-lot-id="selectedLot.id" />
-          </el-tab-pane>
-        </el-tabs>
+        <ParkingLotVisualization 
+          :parking-lot-id="selectedLot.id" 
+          :read-only="false"
+          @space-selected="handleSpaceSelected"
+        />
       </div>
     </el-dialog>
   </div>
@@ -158,15 +118,11 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import * as parkingApi from '@/api/parking'
 import { wsManager, subscribeToParkingUpdates } from '@/utils/websocket'
 import ParkingLotVisualization from '@/components/ParkingLotVisualization.vue'
-import ParkingSpacesList from '@/components/ParkingSpacesList.vue'
-import ParkingLotStatistics from '@/components/ParkingLotStatistics.vue'
 
 export default {
   name: 'ParkingManagement',
   components: {
-    ParkingLotVisualization,
-    ParkingSpacesList,
-    ParkingLotStatistics
+    ParkingLotVisualization
   },
   setup() {
     // State
@@ -190,8 +146,7 @@ export default {
       name: '',
       description: '',
       rows: 10,
-      cols: 14,
-      is_active: true
+      cols: 14
     })
 
     const lotRules = {
@@ -246,15 +201,14 @@ export default {
     const saveParkingLot = async () => {
       try {
         await lotFormRef.value.validate()
-        const status = lotForm.is_active ? 'OPEN' : 'CLOSED'
         const capacity = Number(lotForm.rows) * Number(lotForm.cols)
         if (editingLot.value) {
-          await parkingApi.updateParkingLot(editingLot.value.id, { address: lotForm.description, total_capacity: capacity, status })
+          await parkingApi.updateParkingLot(editingLot.value.id, { address: lotForm.description, total_capacity: capacity, status: 'OPEN' })
           const grid = Array.from({ length: lotForm.rows }, () => Array.from({ length: lotForm.cols }, () => 'parking'))
           await parkingApi.updateParkingLotLayout(editingLot.value.id, { rows: lotForm.rows, cols: lotForm.cols, grid, entrance_position: { row: 0, col: 0 }, exit_position: { row: Math.max(0, lotForm.rows - 1), col: Math.max(0, lotForm.cols - 1) } })
           ElMessage.success('停车场更新成功')
         } else {
-          const created = await parkingApi.createParkingLot({ name: lotForm.name, address: lotForm.description || '', total_capacity: capacity, available_spots: capacity, status })
+          const created = await parkingApi.createParkingLot({ name: lotForm.name, address: lotForm.description || '', total_capacity: capacity, available_spots: capacity, status: 'OPEN' })
           const lotId = created?.id || created?.data?.id || created?.lot_id || null
           if (lotId) {
             const grid = Array.from({ length: lotForm.rows }, () => Array.from({ length: lotForm.cols }, () => 'parking'))
@@ -302,10 +256,9 @@ export default {
     const editParkingLot = (lot) => {
       editingLot.value = lot
       lotForm.name = lot.name
-      lotForm.description = lot.description
+      lotForm.description = lot.address
       lotForm.rows = lot.rows
       lotForm.cols = lot.cols
-      lotForm.is_active = lot.is_active
       showCreateDialog.value = true
     }
 
@@ -321,7 +274,6 @@ export default {
       lotForm.description = ''
       lotForm.rows = 10
       lotForm.cols = 14
-      lotForm.is_active = true
       editingLot.value = null
     }
 
@@ -423,10 +375,15 @@ export default {
 .parking-management {
   padding: 32px;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%);
   animation: fadeIn 0.5s ease-out;
   position: relative;
-  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
 }
 
 .parking-management::before {
@@ -435,75 +392,14 @@ export default {
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 20% 80%, rgba(64, 158, 255, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(82, 196, 26, 0.1) 0%, transparent 50%);
-  z-index: -1;
+  height: 4px;
+  background: linear-gradient(90deg, #409eff 0%, #52c41a 100%);
+  z-index: 1;
 }
 
-.header-section {
-  margin-bottom: 32px;
-  text-align: center;
-  position: relative;
-}
-
-.header-section::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(64, 158, 255, 0.1) 0%, transparent 70%);
-  border-radius: 50%;
-  z-index: -1;
-}
-
-.page-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 8px;
-  animation: slideInDown 0.6s ease-out;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.page-subtitle {
-  font-size: 1.1rem;
-  color: #7f8c8d;
-  margin-bottom: 0;
-  animation: slideInUp 0.6s ease-out 0.2s both;
-}
-
-.parking-lots-container {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  animation: fadeInUp 0.8s ease-out 0.3s both;
-  position: relative;
-  overflow: hidden;
-}
 
 :deep(.el-card__body) {
   overflow: visible;
-}
-
-.parking-lots-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(64, 158, 255, 0.03) 0%, rgba(82, 196, 26, 0.03) 100%);
-  z-index: -1;
 }
 
 .table-header {
@@ -512,18 +408,7 @@ export default {
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.05);
-  position: relative;
-}
-
-.table-header::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent 0%, #409eff 50%, transparent 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .table-title {
@@ -531,22 +416,10 @@ export default {
   font-weight: 600;
   color: #2c3e50;
   margin: 0;
-  position: relative;
 }
 
-.table-title::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 0;
-  width: 40px;
-  height: 3px;
-  background: linear-gradient(90deg, #409eff 0%, #52c41a 100%);
-  border-radius: 2px;
-}
-
-.parking-lots-list {
-  margin-bottom: var(--spacing-lg);
+.table-wrapper {
+  padding: 24px;
 }
 
 .stats-info {
@@ -581,13 +454,14 @@ export default {
   justify-content: center;
   margin-top: 32px;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%);
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
   position: relative;
-  overflow: hidden;
 }
 
 .pagination-container::before {
@@ -596,9 +470,9 @@ export default {
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(64, 158, 255, 0.03) 0%, rgba(82, 196, 26, 0.03) 100%);
-  z-index: -1;
+  height: 3px;
+  background: linear-gradient(90deg, #409eff 0%, #52c41a 100%);
+  z-index: 1;
 }
 
 .parking-lot-detail {
@@ -611,17 +485,93 @@ export default {
   gap: 10px;
 }
 
+/* 新建停车场按钮样式 - 匹配用户列表设计 */
+.add-parking-btn {
+  min-width: 130px;
+  border-radius: 8px;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: none;
+  font-weight: 500;
+  padding: 8px 16px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #409eff, #5da8ff);
+  color: white;
+}
+
+.add-parking-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.15),
+    0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.add-parking-btn:active {
+  transform: translateY(0) scale(1);
+}
+
+/* 操作按钮样式 - 匹配用户列表设计 */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-btn {
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.action-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.view-btn {
+  background: linear-gradient(135deg, #409eff, #5da8ff);
+  color: white;
+}
+
+.edit-btn {
+  background: linear-gradient(135deg, #e6a23c, #f0c26a);
+  color: white;
+}
+
+.delete-btn {
+  background: linear-gradient(135deg, #f56c6c, #f78989);
+  color: white;
+}
+
+.preview-btn {
+  background: linear-gradient(135deg, #909399, #a6a9ad);
+  color: white;
+}
+
 /* Modern theme overrides */
 :deep(.modern-table) {
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.03);
 }
 
 :deep(.modern-table .el-table__header-wrapper) {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px 16px 0 0;
 }
 
 :deep(.modern-table .el-table__header th) {
@@ -635,75 +585,40 @@ export default {
 
 :deep(.modern-table .el-table__body td) {
   color: #2c3e50;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
   padding: 16px 12px;
 }
 
-:deep(.modern-table .el-table__row:hover) {
-  background-color: rgba(64, 158, 255, 0.05);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
-  transition: all 0.3s ease;
+:deep(.modern-table .el-table__row:nth-child(even) td) {
+  background: rgba(248, 250, 252, 0.4);
 }
 
-:deep(.modern-tag) {
-  border-radius: 20px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  border: 1px solid currentColor;
-  padding: 4px 12px;
-}
-
-:deep(.modern-tag.el-tag--success) {
-  background: rgba(82, 196, 26, 0.1);
-  border-color: #52c41a;
-  color: #52c41a;
-}
-
-:deep(.modern-tag.el-tag--warning) {
-  background: rgba(250, 173, 20, 0.1);
-  border-color: #faad14;
-  color: #faad14;
-}
-
-:deep(.modern-tag.el-tag--danger) {
-  background: rgba(245, 34, 45, 0.1);
-  border-color: #f5222d;
-  color: #f5222d;
-}
-
-:deep(.modern-tag:hover) {
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-:deep(.modern-switch) {
-  --el-switch-on-color: var(--success-color);
-  --el-switch-off-color: var(--info-color);
+:deep(.modern-table .el-table__row:hover td) {
+  background: rgba(64, 158, 255, 0.03);
+  transition: all 0.2s ease;
 }
 
 :deep(.modern-tabs) {
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
+  border-radius: 12px;
 }
 
 :deep(.modern-tabs .el-tabs__nav) {
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 :deep(.modern-tabs .el-tabs__item) {
-  color: var(--text-secondary);
+  color: #64748b;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 :deep(.modern-tabs .el-tabs__item.is-active) {
-  color: var(--primary-color);
+  color: #409eff;
   font-weight: 600;
 }
 
 :deep(.modern-tabs .el-tabs__active-bar) {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+  background: #409eff;
 }
 
 /* Responsive design */
@@ -712,11 +627,7 @@ export default {
     padding: var(--spacing-md);
   }
   
-  .page-title {
-    font-size: 2rem;
-  }
-  
-  .table-header {
+  .table-title {
     flex-direction: column;
     gap: var(--spacing-md);
     align-items: stretch;
@@ -737,16 +648,7 @@ export default {
   margin: 2px;
   border-radius: 20px;
   font-weight: 500;
-  transition: all 0.3s ease;
-  background: linear-gradient(135deg, #409eff 0%, #52c41a 100%);
-  border: none;
-  color: white;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
-}
-
-:deep(.modern-btn-small:hover) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.4);
+  transition: all 0.2s ease;
 }
 
 :deep(.modern-btn-warning-small),
@@ -754,16 +656,16 @@ export default {
   padding: 6px 10px;
   font-size: 11px;
   margin: 2px;
+  border-radius: 20px;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
   
-  .parking-lots-container {
-    padding: var(--spacing-md);
-  }
-  
   /* 表格横向滚动优化 */
-  .parking-lots-container {
+  .parking-management {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    padding: var(--spacing-md);
   }
   
   :deep(.el-table) {
@@ -804,18 +706,16 @@ export default {
     padding: 0 12px;
     height: 32px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     color: #2c3e50;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
   }
   
   .pagination-container :deep(.el-pagination button:hover) {
-    background: rgba(64, 158, 255, 0.1);
+    background: rgba(64, 158, 255, 0.05);
     border-color: #409eff;
     color: #409eff;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
   }
   
   .pagination-container :deep(.el-pagination button:disabled) {
@@ -828,34 +728,27 @@ export default {
     line-height: 32px;
     min-width: 32px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     color: #2c3e50;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     font-weight: 500;
   }
   
   .pagination-container :deep(.el-pager li:hover) {
-    background: rgba(64, 158, 255, 0.1);
+    background: rgba(64, 158, 255, 0.05);
     border-color: #409eff;
     color: #409eff;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
   }
   
   .pagination-container :deep(.el-pager li.active) {
-    background: linear-gradient(135deg, #409eff 0%, #52c41a 100%);
+    background: #409eff;
     border: none;
     color: white;
-    box-shadow: 0 2px 8px rgba(64, 158, 255, 0.4);
   }
 }
 
 @media (max-width: 480px) {
-  .page-title {
-    font-size: 1.8rem;
-  }
-  
   .table-header {
     gap: var(--spacing-sm);
   }
@@ -955,28 +848,6 @@ export default {
 }
 
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInUp {
   from {
     opacity: 0;
     transform: translateY(30px);

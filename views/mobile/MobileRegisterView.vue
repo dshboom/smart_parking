@@ -284,7 +284,7 @@ export default {
 <style lang="scss" scoped>
 .mobile-register-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -293,11 +293,11 @@ export default {
   
   @media screen and (max-width: 768px) {
     padding: 0;
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   }
   
   @media screen and (max-width: 375px) {
-    background: linear-gradient(135deg, #6a4b9e 0%, #5a6fd8 100%);
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4b9e 100%);
   }
 }
 
@@ -325,7 +325,7 @@ export default {
 }
 
 .register-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
   padding: 40px 30px;
   text-align: center;
   color: white;

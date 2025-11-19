@@ -58,9 +58,10 @@
             <el-checkbox v-model="rememberMe" class="remember-checkbox">
               记住我
             </el-checkbox>
-            <a href="#" class="forget-link" @click.prevent="handleForgetPassword">
+            <!-- 忘记密码功能暂时隐藏 -->
+            <!-- <a href="#" class="forget-link" @click.prevent="handleForgetPassword">
               忘记密码？
-            </a>
+            </a> -->
           </div>
 
           <el-button 
@@ -192,9 +193,10 @@ export default {
       this.$router.push('/register')
     },
     
-    handleForgetPassword() {
-      this.$message.info('🔒 密码找回功能开发中...')
-    },
+    // 忘记密码功能暂时隐藏
+    // handleForgetPassword() {
+    //   this.$router.push('/forgot-password')
+    // },
     
     showTerms() {
       this.$message.info('📋 服务条款功能开发中...')
@@ -456,7 +458,7 @@ export default {
 
 .form-options {
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* 居中显示，因为忘记密码链接已隐藏 */
   align-items: center;
   margin-bottom: 20px;
   
